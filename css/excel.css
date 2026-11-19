@@ -1,0 +1,62 @@
+/* Excel UI — Developer: Sahil Jadhav */
+.app-excel { --accent: #217346; }
+.app-excel .app-content { display: flex; flex-direction: column; background: #fff; min-height: 0; }
+.x-fbar { display: flex; align-items: center; gap: 4px; padding: 3px 6px; border-bottom: 1px solid #d6d6d6; background: #fff; flex: none; }
+.x-fbar[hidden] { display: none; }
+.x-name { width: 92px; border: 1px solid #c8c8c8; padding: 3px 6px; font: inherit; border-radius: 2px; text-align: left; }
+.x-fx { border: 0; background: none; cursor: pointer; font: italic 700 15px Georgia, serif; color: #555; padding: 2px 8px; border-radius: 3px; }
+.x-fx:hover { background: #e6e6e6; }
+.x-fin { flex: 1; min-width: 0; border: 1px solid #c8c8c8; padding: 4px 6px; font: inherit; border-radius: 2px; }
+.x-fin:focus, .x-name:focus { outline: 2px solid #217346; outline-offset: -1px; }
+.x-grid { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #fff; }
+.x-canvas { position: absolute; left: 0; top: 0; pointer-events: none; }
+.x-scroller { position: absolute; inset: 0; overflow: auto; outline: none; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; cursor: cell; }
+.x-scroller.selmode { touch-action: none; }
+.x-spacer { position: relative; }
+.x-ed { position: absolute; z-index: 5; border: 2px solid #217346; background: #fff; padding: 0 3px; margin: 0; resize: none; overflow: hidden; outline: none; white-space: pre; font-family: Calibri, Carlito, 'Segoe UI', Arial, sans-serif; line-height: 1.2; box-sizing: border-box; }
+.x-ed.wrap { white-space: pre-wrap; }
+.x-ac { position: absolute; z-index: 30; background: #fff; border: 1px solid #aaa; box-shadow: 0 3px 10px rgba(0,0,0,.2); max-height: 190px; overflow: auto; min-width: 200px; font-size: 13px; }
+.x-ac div { padding: 3px 10px; cursor: pointer; white-space: nowrap; } .x-ac div small { color: #777; margin-left: 8px; }
+.x-ac div.on, .x-ac div:hover { background: #cfe3f7; }
+.x-hint { position: absolute; z-index: 29; background: #ffffe1; border: 1px solid #999; padding: 2px 6px; font-size: 12px; pointer-events: none; white-space: nowrap; }
+.x-dd { position: absolute; z-index: 6; background: #f0f0f0; border: 1px solid #888; width: 17px; height: 17px; display: grid; place-items: center; cursor: pointer; font-size: 9px; padding: 0; line-height: 1; }
+.x-chart { position: absolute; background: #fff; border: 1px solid #c8c8c8; box-shadow: 0 1px 4px rgba(0,0,0,.2); user-select: none; touch-action: none; overflow: hidden; }
+.x-chart svg { display: block; width: 100%; height: 100%; pointer-events: none; }
+.x-chart.sel { border: 2px solid #217346; }
+.x-chart .rs { position: absolute; right: -1px; bottom: -1px; width: 14px; height: 14px; cursor: nwse-resize; background: linear-gradient(135deg, transparent 50%, #217346 50%); display: none; }
+.x-chart.sel .rs { display: block; }
+.x-tabs { display: flex; align-items: stretch; background: #f0f0f0; border-top: 1px solid #c6c6c6; flex: none; height: 30px; font-size: 13px; }
+.x-tabs .tl { display: flex; overflow-x: auto; flex: 1; scrollbar-width: none; }
+.x-tabs .tl::-webkit-scrollbar { display: none; }
+.x-tab { padding: 0 16px; display: flex; align-items: center; cursor: pointer; border: 0; border-right: 1px solid #d0d0d0; background: transparent; white-space: nowrap; position: relative; color: #333; }
+.x-tab:hover { background: #e2e2e2; }
+.x-tab.on { background: #fff; color: #217346; font-weight: 600; box-shadow: inset 0 -3px 0 #217346; }
+.x-tab .tc { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; }
+.x-tabs .tbtn { border: 0; background: none; cursor: pointer; padding: 0 10px; font-size: 18px; color: #444; }
+.x-tabs .tbtn:hover { background: #e2e2e2; }
+.x-tabs .tbtn[disabled] { opacity: .3; cursor: default; }
+.x-tabbar-edit { width: 120px; padding: 2px 6px; font: inherit; }
+.x-fmt-tabs { display: flex; gap: 2px; border-bottom: 1px solid #ccc; margin-bottom: 10px; flex-wrap: wrap; }
+.x-fmt-tabs button { border: 1px solid transparent; background: none; padding: 5px 12px; cursor: pointer; border-radius: 3px 3px 0 0; }
+.x-fmt-tabs button.on { background: #fff; border-color: #ccc #ccc #fff; margin-bottom: -1px; font-weight: 600; }
+.x-fmt-body { min-height: 250px; }
+.x-cat { display: grid; grid-template-columns: 130px 1fr; gap: 10px; }
+.x-cat .cl { border: 1px solid #ccc; max-height: 220px; overflow: auto; }
+.x-cat .cl div { padding: 4px 8px; cursor: pointer; } .x-cat .cl div.on { background: #cfe3f7; } .x-cat .cl div:hover { background: #e8f0fa; }
+.x-sample { border: 1px solid #ccc; padding: 6px 10px; margin: 6px 0 10px; background: #fafafa; min-height: 30px; }
+.x-bgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 14px; align-items: center; }
+.x-listbox { border: 1px solid #ccc; max-height: 230px; overflow: auto; }
+.x-listbox label { display: flex; gap: 6px; padding: 3px 8px; align-items: center; }
+.x-listbox label:hover { background: #eef4fb; }
+.x-sortrow { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+.x-print { display: none; }
+.sb-stats { display: flex; gap: 14px; }
+@media (max-width: 760px) { .x-name { width: 64px; } .x-cat { grid-template-columns: 1fr; } .x-bgrid { grid-template-columns: 1fr; } }
+@media print {
+  body.printing > *:not(.x-print) { display: none !important; }
+  body.printing .x-print { display: block !important; }
+  .x-print { font-family: Calibri, Arial, sans-serif; font-size: 10pt; }
+  .x-print table { border-collapse: collapse; } .x-print td, .x-print th { padding: 1px 4px; white-space: pre; }
+  .x-print.grid td, .x-print.grid th { border: 1px solid #bbb; }
+  .x-print h3 { margin: 0 0 6px; page-break-before: always; } .x-print h3:first-child { page-break-before: auto; }
+}

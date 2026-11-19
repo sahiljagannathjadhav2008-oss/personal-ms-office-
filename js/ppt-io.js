@@ -1,0 +1,140 @@
+/* PowerPoint import/export (.pptx) — Developer: Sahil Jadhav */
+(function (global) {
+  'use strict';
+  const OA = global.OA; const IO = OA.pptIO = {};
+  const xe = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '');
+  const E = v => Math.round((+v || 0) * 12700);
+  const hex6 = c => { c = String(c || '000000').replace('#', ''); if (/^[0-9a-f]{3}$/i.test(c)) c = c.split('').map(x => x + x).join(''); return /^[0-9a-f]{6}$/i.test(c) ? c.toUpperCase() : '000000'; };
+  const NS = 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"';
+  const HDR = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  IO.SHAPES = { rect: 'rect', round: 'roundRect', ellipse: 'ellipse', triangle: 'triangle', diamond: 'diamond', star: 'star5', arrow: 'rightArrow', line: 'line', hexagon: 'hexagon', pentagon: 'pentagon', heart: 'heart', cloud: 'cloud', rarrow: 'leftArrow', callout: 'wedgeRectCallout' };
+  const TRANS = { fade: '<p:fade/>', push: '<p:push dir="l"/>', wipe: '<p:wipe dir="l"/>', zoom: '<p:zoom/>', split: '<p:split orient="horz" dir="out"/>', cover: '<p:cover dir="l"/>', dissolve: '<p:dissolve/>', random: '<p:random/>' };
+
+  const theme = (name, c) => `${HDR}<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="${xe(name)}"><a:themeElements><a:clrScheme name="${xe(name)}"><a:dk1><a:srgbClr val="${hex6(c.fg)}"/></a:dk1><a:lt1><a:srgbClr val="${hex6(c.bg)}"/></a:lt1><a:dk2><a:srgbClr val="44546A"/></a:dk2><a:lt2><a:srgbClr val="E7E6E6"/></a:lt2><a:accent1><a:srgbClr val="${hex6(c.accent)}"/></a:accent1><a:accent2><a:srgbClr val="ED7D31"/></a:accent2><a:accent3><a:srgbClr val="A5A5A5"/></a:accent3><a:accent4><a:srgbClr val="FFC000"/></a:accent4><a:accent5><a:srgbClr val="5B9BD5"/></a:accent5><a:accent6><a:srgbClr val="70AD47"/></a:accent6><a:hlink><a:srgbClr val="0563C1"/></a:hlink><a:folHlink><a:srgbClr val="954F72"/></a:folHlink></a:clrScheme><a:fontScheme name="Office"><a:majorFont><a:latin typeface="${xe(c.font || 'Calibri')}"/><a:ea typeface=""/><a:cs typeface=""/></a:majorFont><a:minorFont><a:latin typeface="${xe(c.font || 'Calibri')}"/><a:ea typeface=""/><a:cs typeface=""/></a:minorFont></a:fontScheme><a:fmtScheme name="Office"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst><a:lnStyleLst><a:ln w="6350"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="19050"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst></a:fmtScheme></a:themeElements></a:theme>`;
+
+  function txBody(o, forShape) {
+    const lines = String(o.text == null ? '' : o.text).split('\n'); const sz = Math.round((o.sz || 18) * 100);
+    const algn = { left: 'l', center: 'ctr', right: 'r', justify: 'just' }[o.ha || (forShape ? 'center' : 'left')] || 'l'; const anchor = { top: 't', middle: 'ctr', bottom: 'b' }[o.va || (forShape ? 'middle' : 'top')] || 't';
+    const rpr = tag => `<a:${tag} lang="en-US" sz="${sz}" b="${o.b ? 1 : 0}" i="${o.i ? 1 : 0}"${o.u ? ' u="sng"' : ''} dirty="0"><a:solidFill><a:srgbClr val="${hex6(o.color || '000000')}"/></a:solidFill><a:latin typeface="${xe(o.font || 'Calibri')}"/><a:cs typeface="${xe(o.font || 'Calibri')}"/></a:${tag}>`;
+    const ps = lines.map(t => `<a:p><a:pPr algn="${algn}"${o.bullet ? ' marL="342900" indent="-342900"' : ''}>${o.bullet ? '<a:buFont typeface="Arial"/><a:buChar char="&#8226;"/>' : '<a:buNone/>'}</a:pPr>${t ? `<a:r>${rpr('rPr')}<a:t>${xe(t)}</a:t></a:r>` : ''}${rpr('endParaRPr')}</a:p>`).join('');
+    return `<p:txBody><a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" rtlCol="0" anchor="${anchor}"><a:noAutofit/></a:bodyPr><a:lstStyle/>${ps}</p:txBody>`;
+  }
+  const xfrm = (o, tag) => `<a:xfrm${o.rot ? ' rot="' + Math.round(o.rot * 60000) + '"' : ''}><a:off x="${E(o.x)}" y="${E(o.y)}"/><a:ext cx="${E(o.w)}" cy="${E(o.h)}"/></a:xfrm>`;
+  const solid = c => c ? `<a:solidFill><a:srgbClr val="${hex6(c)}"/></a:solidFill>` : '<a:noFill/>';
+  const ln = o => o.line ? `<a:ln w="${E(o.lw || 1)}"><a:solidFill><a:srgbClr val="${hex6(o.line)}"/></a:solidFill></a:ln>` : '<a:ln><a:noFill/></a:ln>';
+
+  IO.toPptx = async function (deck) {
+    const files = []; const media = new Map(); const th = deck.theme || { name: 'Office', bg: 'FFFFFF', fg: '000000', accent: '4472C4', font: 'Calibri' };
+    const n = deck.slides.length;
+    const ct = [`<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>`, `<Default Extension="xml" ContentType="application/xml"/>`, `<Default Extension="png" ContentType="image/png"/>`, `<Default Extension="jpeg" ContentType="image/jpeg"/>`, `<Default Extension="gif" ContentType="image/gif"/>`, `<Default Extension="svg" ContentType="image/svg+xml"/>`, `<Default Extension="webp" ContentType="image/webp"/>`,
+      `<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>`, `<Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>`, `<Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>`, `<Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>`, `<Override PartName="/ppt/theme/theme2.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>`, `<Override PartName="/ppt/notesMasters/notesMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesMaster+xml"/>`,
+      `<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>`, `<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>`];
+    const emptyTree = '<p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr></p:spTree>';
+    const slideRels = [];
+    deck.slides.forEach((s, si) => {
+      const rels = [`<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>`]; let rid = 1; let id = 2; let sp = '';
+      (s.objs || []).forEach(o => {
+        const nm = xe((o.type || 'Shape') + ' ' + id);
+        if (o.type === 'image' && o.src) {
+          const d = OA.dataURLtoBytes(o.src); if (!d) return; let ext = (d.mime.split('/')[1] || 'png').replace('jpg', 'jpeg').replace('svg+xml', 'svg'); if (!/^(png|jpeg|gif|svg|webp)$/.test(ext)) ext = 'png';
+          let mn = media.get(o.src); if (!mn) { mn = 'image' + (media.size + 1) + '.' + ext; media.set(o.src, mn); files.push(['ppt/media/' + mn, d.bytes]); }
+          const r = 'rId' + (++rid); rels.push(`<Relationship Id="${r}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${mn}"/>`);
+          sp += `<p:pic><p:nvPicPr><p:cNvPr id="${id++}" name="${nm}" descr="${xe(o.alt || '')}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="${r}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr>${xfrm(o)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>${ln(o)}</p:spPr></p:pic>`;
+        } else if (o.type === 'table') {
+          const rows = o.rows && o.rows.length ? o.rows : [['']]; const nc = Math.max(...rows.map(r => r.length)); const cw = Math.round(E(o.w) / nc), rh = Math.round(E(o.h) / rows.length);
+          const tr = rows.map((r, ri) => `<a:tr h="${rh}">` + Array.from({ length: nc }, (_, ci) => { const t = r[ci] || ''; const hd = ri === 0 && o.header !== false; const fill = hd ? (o.hc || th.accent) : (ri % 2 === 0 ? (o.band || 'E9EDF7') : 'FFFFFF'); const col = hd ? 'FFFFFF' : (o.color || '000000');
+            const b = `<a:lnL w="6350"><a:solidFill><a:srgbClr val="BFBFBF"/></a:solidFill></a:lnL><a:lnR w="6350"><a:solidFill><a:srgbClr val="BFBFBF"/></a:solidFill></a:lnR><a:lnT w="6350"><a:solidFill><a:srgbClr val="BFBFBF"/></a:solidFill></a:lnT><a:lnB w="6350"><a:solidFill><a:srgbClr val="BFBFBF"/></a:solidFill></a:lnB>`;
+            return `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="l"/>${t ? `<a:r><a:rPr lang="en-US" sz="${Math.round((o.sz || 16) * 100)}" b="${hd ? 1 : 0}" dirty="0"><a:solidFill><a:srgbClr val="${hex6(col)}"/></a:solidFill><a:latin typeface="${xe(o.font || 'Calibri')}"/></a:rPr><a:t>${xe(t)}</a:t></a:r>` : ''}<a:endParaRPr lang="en-US" sz="${Math.round((o.sz || 16) * 100)}"/></a:p></a:txBody><a:tcPr anchor="ctr">${b}${solid(fill)}</a:tcPr></a:tc>`; }).join('') + '</a:tr>').join('');
+          sp += `<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="${id++}" name="${nm}"/><p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="${E(o.x)}" y="${E(o.y)}"/><a:ext cx="${E(o.w)}" cy="${E(o.h)}"/></p:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table"><a:tbl><a:tblPr firstRow="1" bandRow="1"/><a:tblGrid>${Array.from({ length: nc }, () => `<a:gridCol w="${cw}"/>`).join('')}</a:tblGrid>${tr}</a:tbl></a:graphicData></a:graphic></p:graphicFrame>`;
+        } else if (o.type === 'shape') {
+          const prst = IO.SHAPES[o.kind] || 'rect';
+          sp += `<p:sp><p:nvSpPr><p:cNvPr id="${id++}" name="${nm}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr>${xfrm(o)}<a:prstGeom prst="${prst}"><a:avLst/></a:prstGeom>${prst === 'line' ? '<a:noFill/>' : solid(o.fill)}${prst === 'line' ? ln(Object.assign({}, o, { line: o.line || o.fill || '000000' })) : ln(o)}</p:spPr>${txBody(o, true)}</p:sp>`;
+        } else {
+          sp += `<p:sp><p:nvSpPr><p:cNvPr id="${id++}" name="${nm}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr>${xfrm(o)}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>${solid(o.fill)}${ln(o)}</p:spPr>${txBody(o, false)}</p:sp>`;
+        }
+      });
+      const bg = s.bg ? `<p:bg><p:bgPr>${solid(s.bg)}<a:effectLst/></p:bgPr></p:bg>` : '';
+      const tr = s.trans && s.trans.type && TRANS[s.trans.type] ? `<p:transition spd="${(s.trans.dur || 1) <= 0.6 ? 'fast' : (s.trans.dur || 1) >= 1.6 ? 'slow' : 'med'}">${TRANS[s.trans.type]}</p:transition>` : '';
+      if (s.notes) { const r = 'rId' + (++rid); rels.push(`<Relationship Id="${r}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" Target="../notesSlides/notesSlide${si + 1}.xml"/>`);
+        files.push([`ppt/notesSlides/notesSlide${si + 1}.xml`, `${HDR}<p:notes ${NS}><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/><p:sp><p:nvSpPr><p:cNvPr id="2" name="Slide Image Placeholder 1"/><p:cNvSpPr><a:spLocks noGrp="1" noRot="1" noChangeAspect="1"/></p:cNvSpPr><p:nvPr><p:ph type="sldImg"/></p:nvPr></p:nvSpPr><p:spPr/></p:sp><p:sp><p:nvSpPr><p:cNvPr id="3" name="Notes Placeholder 2"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="body" idx="1"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/>${String(s.notes).split('\n').map(t => `<a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t>${xe(t)}</a:t></a:r></a:p>`).join('')}</p:txBody></p:sp></p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:notes>`]);
+        files.push([`ppt/notesSlides/_rels/notesSlide${si + 1}.xml.rels`, `${HDR}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster" Target="../notesMasters/notesMaster1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="../slides/slide${si + 1}.xml"/></Relationships>`]);
+        ct.push(`<Override PartName="/ppt/notesSlides/notesSlide${si + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml"/>`); }
+      files.push([`ppt/slides/slide${si + 1}.xml`, `${HDR}<p:sld ${NS}><p:cSld>${bg}<p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>${sp}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>${tr}</p:sld>`]);
+      files.push([`ppt/slides/_rels/slide${si + 1}.xml.rels`, `${HDR}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels.join('')}</Relationships>`]);
+      ct.push(`<Override PartName="/ppt/slides/slide${si + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`);
+    });
+    const R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+    files.unshift(['[Content_Types].xml', `${HDR}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">${ct.join('')}</Types>`],
+      ['_rels/.rels', `${HDR}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${R}/officeDocument" Target="ppt/presentation.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="${R}/extended-properties" Target="docProps/app.xml"/></Relationships>`],
+      ['docProps/core.xml', `${HDR}<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${xe(deck.title || 'Presentation')}</dc:title><dc:creator>Office Web (Sahil Jadhav)</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:created></cp:coreProperties>`],
+      ['docProps/app.xml', `${HDR}<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>Office Web</Application><Slides>${n}</Slides></Properties>`],
+      ['ppt/presentation.xml', `${HDR}<p:presentation ${NS} saveSubsetFonts="1"><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst><p:notesMasterIdLst><p:notesMasterId r:id="rId${n + 3}"/></p:notesMasterIdLst><p:sldIdLst>${deck.slides.map((s, i) => `<p:sldId id="${256 + i}" r:id="rId${i + 2}"/>`).join('')}</p:sldIdLst><p:sldSz cx="${E(deck.w || 960)}" cy="${E(deck.h || 540)}"/><p:notesSz cx="6858000" cy="9144000"/></p:presentation>`],
+      ['ppt/_rels/presentation.xml.rels', `${HDR}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${R}/slideMaster" Target="slideMasters/slideMaster1.xml"/>${deck.slides.map((s, i) => `<Relationship Id="rId${i + 2}" Type="${R}/slide" Target="slides/slide${i + 1}.xml"/>`).join('')}<Relationship Id="rId${n + 2}" Type="${R}/theme" Target="theme/theme1.xml"/><Relationship Id="rId${n + 3}" Type="${R}/notesMaster" Target="notesMasters/notesMaster1.xml"/></Relationships>`],
+      ['ppt/slideMasters/slideMaster1.xml', `${HDR}<p:sldMaster ${NS}><p:cSld><p:bg><p:bgPr>${solid(th.bg)}<a:effectLst/></p:bgPr></p:bg>${emptyTree}</p:cSld><p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/><p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst></p:sldMaster>`],
+      ['ppt/slideMasters/_rels/slideMaster1.xml.rels', `${HDR}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${R}/slideLayout" Target="../slideLayouts/slideLayout1.xml"/><Relationship Id="rId2" Type="${R}/theme" Target="../theme/theme1.xml"/></Relationships>`],
+      ['ppt/slideLayouts/slideLayout1.xml', `${HDR}<p:sldLayout ${NS} type="blank" preserve="1"><p:cSld name="Blank">${emptyTree}</p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>`],
+      ['ppt/slideLayouts/_rels/slideLayout1.xml.rels', `${HDR}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${R}/slideMaster" Target="../slideMasters/slideMaster1.xml"/></Relationships>`],
+      ['ppt/notesMasters/notesMaster1.xml', `${HDR}<p:notesMaster ${NS}><p:cSld>${emptyTree}</p:cSld><p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/></p:notesMaster>`],
+      ['ppt/notesMasters/_rels/notesMaster1.xml.rels', `${HDR}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${R}/theme" Target="../theme/theme2.xml"/></Relationships>`],
+      ['ppt/theme/theme1.xml', theme(th.name || 'Office', th)], ['ppt/theme/theme2.xml', theme('Notes', { bg: 'FFFFFF', fg: '000000', accent: '4472C4' })]);
+    return OA.zip(files);
+  };
+
+  /* ---------------- import */
+  const q = (n, tag) => n ? Array.from(n.getElementsByTagName(tag)) : [];
+  const q1 = (n, tag) => n ? n.getElementsByTagName(tag)[0] || null : null;
+  const kids = (n, tag) => n ? Array.from(n.childNodes).filter(c => c.nodeType === 1 && (c.localName === tag || c.nodeName === tag)) : [];
+  const dir = p => p.slice(0, p.lastIndexOf('/') + 1);
+  function resolve(base, target) { if (target[0] === '/') return target.slice(1); const parts = (dir(base) + target).split('/'); const out = []; parts.forEach(p => { if (p === '..') out.pop(); else if (p !== '.') out.push(p); }); return out.join('/'); }
+  IO.fromPptx = async function (buf) {
+    const f = await OA.unzip(buf); const txt = n => f[n] ? OA.fromUtf8(f[n]) : null; const xml = n => txt(n) ? OA.xmlDoc(txt(n)) : null;
+    const pres = xml('ppt/presentation.xml'); if (!pres) throw new Error('presentation.xml nahi mila');
+    const sz = q1(pres, 'p:sldSz'); const SW = sz ? +sz.getAttribute('cx') : 12192000, SH = sz ? +sz.getAttribute('cy') : 6858000; const k = 960 / (SW / 12700); const U = v => Math.round((+v || 0) / 12700 * k * 10) / 10;
+    const relsOf = p => { const rp = dir(p) + '_rels/' + p.split('/').pop() + '.rels'; const d = xml(rp); const m = {}; q(d, 'Relationship').forEach(r => { m[r.getAttribute('Id')] = { type: r.getAttribute('Type'), target: resolve(p, r.getAttribute('Target')) }; }); return m; };
+    const prels = relsOf('ppt/presentation.xml'); const slidePaths = q(pres, 'p:sldId').map(s => prels[s.getAttribute('r:id')]).filter(Boolean).map(r => r.target);
+    // theme colours
+    const themeP = Object.values(prels).find(r => /theme$/.test(r.type)); const th = themeP ? xml(themeP.target) : null; const tc = {};
+    if (th) { const cs = q1(th, 'a:clrScheme'); if (cs) Array.from(cs.children).forEach(c => { const v = c.firstElementChild; if (v) tc[c.localName] = v.getAttribute('val') || v.getAttribute('lastClr') || '000000'; }); }
+    const map = { tx1: 'dk1', bg1: 'lt1', tx2: 'dk2', bg2: 'lt2' };
+    const color = node => { if (!node) return null; const c = node.firstElementChild; if (!c) return null; if (c.localName === 'srgbClr') return '#' + c.getAttribute('val'); if (c.localName === 'schemeClr') { const v = c.getAttribute('val'); const r = tc[map[v] || v]; return r ? '#' + r : (v === 'tx1' ? '#000000' : '#ffffff'); } if (c.localName === 'sysClr') return '#' + (c.getAttribute('lastClr') || '000000'); return null; };
+    const fillOf = spPr => { if (!spPr) return null; const sf = kids(spPr, 'solidFill')[0]; return sf ? color(sf) : null; };
+    const lnOf = spPr => { const l = kids(spPr, 'ln')[0]; if (!l || kids(l, 'noFill')[0]) return { line: null }; const sf = kids(l, 'solidFill')[0]; return { line: sf ? color(sf) : null, lw: l.getAttribute('w') ? Math.max(0.5, +l.getAttribute('w') / 12700) : 1 }; };
+    const geoms = Object.entries(IO.SHAPES).reduce((m, [a, b]) => (m[b] = a, m), {});
+    const phPos = (slidePath, ph) => { // placeholder position from layout / master
+      const lay = Object.values(relsOf(slidePath)).find(r => /slideLayout$/.test(r.type)); const docs = []; if (lay) { docs.push(xml(lay.target)); const mr = Object.values(relsOf(lay.target)).find(r => /slideMaster$/.test(r.type)); if (mr) docs.push(xml(mr.target)); }
+      const t = ph.getAttribute('type'), idx = ph.getAttribute('idx'); for (const d of docs) { for (const sp of q(d, 'p:sp')) { const p2 = q1(sp, 'p:ph'); if (!p2) continue; if ((idx && p2.getAttribute('idx') === idx) || (t && p2.getAttribute('type') === t) || (!t && !idx && !p2.getAttribute('type'))) { const x = q1(sp, 'a:xfrm'); if (x) return x; } } } return null;
+    };
+    const textOf = (tb, o) => {
+      if (!tb) return; const ps = kids(tb, 'a:p'); const lines = []; let first = true;
+      ps.forEach(p => { let t = ''; Array.from(p.childNodes).forEach(c => { if (c.localName === 'r') { t += (q1(c, 'a:t') || {}).textContent || ''; if (first) { const rp = q1(c, 'a:rPr'); if (rp) { if (rp.getAttribute('sz')) o.sz = +rp.getAttribute('sz') / 100 * k; if (rp.getAttribute('b') === '1') o.b = true; if (rp.getAttribute('i') === '1') o.i = true; if (rp.getAttribute('u') && rp.getAttribute('u') !== 'none') o.u = true; const sf = kids(rp, 'solidFill')[0]; if (sf) o.color = color(sf); const lt = kids(rp, 'latin')[0]; if (lt && lt.getAttribute('typeface') && lt.getAttribute('typeface')[0] !== '+') o.font = lt.getAttribute('typeface'); first = false; } } } else if (c.localName === 'br') t += '\n'; else if (c.localName === 'fld') t += (q1(c, 'a:t') || {}).textContent || ''; });
+        const pp = kids(p, 'a:pPr')[0]; if (pp) { const al = pp.getAttribute('algn'); if (al && !o._al) { o.ha = { l: 'left', ctr: 'center', r: 'right', just: 'justify' }[al]; o._al = 1; } if (kids(pp, 'a:buChar')[0] || kids(pp, 'a:buAutoNum')[0]) o.bullet = true; } lines.push(t); });
+      o.text = lines.join('\n'); delete o._al; const bp = kids(tb, 'a:bodyPr')[0]; if (bp && bp.getAttribute('anchor')) o.va = { t: 'top', ctr: 'middle', b: 'bottom' }[bp.getAttribute('anchor')] || undefined;
+    };
+    const slides = [];
+    for (const sp of slidePaths) {
+      const d = xml(sp); const rels = relsOf(sp); const s = { id: 's' + Math.random().toString(36).slice(2, 9), bg: null, trans: { type: 'none', dur: 1 }, notes: '', objs: [] };
+      const bgn = q1(d, 'p:bg'); if (bgn) { const bp = q1(bgn, 'p:bgPr'); s.bg = bp ? fillOf(bp) : null; }
+      const walk = tree => Array.from(tree.children).forEach(c => {
+        const nm = c.localName; if (nm === 'grpSp') { walk(c); return; } if (nm !== 'sp' && nm !== 'pic' && nm !== 'graphicFrame' && nm !== 'cxnSp') return;
+        let xf = q1(c, 'a:xfrm') || (nm === 'graphicFrame' ? q1(c, 'p:xfrm') : null); if (!xf) { const ph = q1(c, 'p:ph'); if (ph) xf = phPos(sp, ph); } if (!xf) return;
+        const off = q1(xf, 'a:off'), ext = q1(xf, 'a:ext'); if (!off || !ext) return;
+        const o = { id: 'o' + Math.random().toString(36).slice(2, 9), x: U(off.getAttribute('x')), y: U(off.getAttribute('y')), w: Math.max(4, U(ext.getAttribute('cx'))), h: Math.max(4, U(ext.getAttribute('cy'))), rot: xf.getAttribute('rot') ? Math.round(+xf.getAttribute('rot') / 60000) : 0, sz: 18 * k, color: '#000000' };
+        if (nm === 'pic') { const bl = q1(c, 'a:blip'); const r = bl && rels[bl.getAttribute('r:embed')]; if (!r || !f[r.target]) return; const ext2 = (r.target.split('.').pop() || 'png').toLowerCase(); const mime = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', svg: 'image/svg+xml', webp: 'image/webp' }[ext2]; if (!mime) return; o.type = 'image'; o.src = OA.bytesToDataURL(f[r.target], mime); }
+        else if (nm === 'graphicFrame') { const tbl = q1(c, 'a:tbl'); if (!tbl) return; o.type = 'table'; o.sz = 14; o.rows = kids(tbl, 'a:tr').map(tr => kids(tr, 'a:tc').map(tcn => q(tcn, 'a:p').map(p => q(p, 'a:t').map(t => t.textContent).join('')).join('\n'))); }
+        else { const spPr = q1(c, 'p:spPr'); const g = spPr && q1(spPr, 'a:prstGeom'); const prst = g ? g.getAttribute('prst') : 'rect'; const isTx = q1(c, 'p:cNvSpPr') && q1(c, 'p:cNvSpPr').getAttribute('txBox') === '1' || !!q1(c, 'p:ph');
+          const fill = fillOf(spPr), l = lnOf(spPr); const body = q1(c, 'p:txBody'); { const ph = q1(c, 'p:ph'); if (ph) { const pt = ph.getAttribute('type'); o.sz = (pt === 'title' || pt === 'ctrTitle') ? 40 * k : 24 * k; if (pt === 'title' || pt === 'ctrTitle') { o.b = true; o.va = 'middle'; if (pt === 'ctrTitle' || pt === 'subTitle') o.ha = 'center'; } else if (pt === 'subTitle') o.ha = 'center'; else if (!pt || pt === 'body') o.bullet = true; } }
+          if (nm === 'cxnSp' || prst === 'line' || prst === 'straightConnector1') { o.type = 'shape'; o.kind = 'line'; o.line = l.line || fill || '#000000'; o.lw = l.lw || 1; }
+          else if (isTx && !(prst && geoms[prst] && geoms[prst] !== 'rect' && fill)) { o.type = 'text'; if (fill) o.fill = fill; if (l.line) { o.line = l.line; o.lw = l.lw; } textOf(body, o); }
+          else { o.type = 'shape'; o.kind = geoms[prst] || 'rect'; o.fill = fill; o.line = l.line; o.lw = l.lw || 1; textOf(body, o); if (!o.text && !fill && !l.line) return; }
+          if (o.type === 'text' && !o.text) return; }
+        s.objs.push(o);
+      });
+      walk(q1(d, 'p:spTree'));
+      const tr = q1(d, 'p:transition'); if (tr) { const c = tr.firstElementChild; const m = { fade: 'fade', push: 'push', wipe: 'wipe', zoom: 'zoom', split: 'split', cover: 'cover', dissolve: 'dissolve', random: 'random' }; if (c && m[c.localName]) s.trans.type = m[c.localName]; }
+      const nr = Object.values(rels).find(r => /notesSlide$/.test(r.type)); if (nr) { const nd = xml(nr.target); q(nd, 'p:sp').forEach(x => { const ph = q1(x, 'p:ph'); if (ph && ph.getAttribute('type') === 'body') s.notes = q(x, 'a:p').map(p => q(p, 'a:t').map(t => t.textContent).join('')).join('\n'); }); }
+      slides.push(s);
+    }
+    if (!slides.length) slides.push({ id: 's1', bg: null, trans: { type: 'none', dur: 1 }, notes: '', objs: [] });
+    return { w: 960, h: Math.round(960 * SH / SW), theme: { name: 'Imported', bg: '#ffffff', fg: '#000000', accent: '#' + (tc.accent1 || '4472C4'), font: 'Calibri' }, slides };
+  };
+})(window);

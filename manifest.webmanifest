@@ -1,0 +1,13 @@
+{
+  "name": "Office Web – Word, Excel, PowerPoint",
+  "short_name": "Office Web",
+  "description": "Word, Excel and PowerPoint in your browser. Developer: Sahil Jadhav",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f3f3",
+  "theme_color": "#d83b01",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

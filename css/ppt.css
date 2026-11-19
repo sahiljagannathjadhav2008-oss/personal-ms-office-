@@ -1,0 +1,44 @@
+/* PowerPoint UI — Developer: Sahil Jadhav */
+.app-ppt { --accent: #b7472a; }
+.app-ppt .app-content { display: grid; grid-template-columns: 190px 1fr; min-height: 0; background: #e6e6e6; }
+.p-thumbs { overflow: auto; background: #f3f3f3; border-right: 1px solid #cfcfcf; padding: 8px 6px; display: flex; flex-direction: column; gap: 8px; }
+.p-th { display: grid; grid-template-columns: 18px 1fr; gap: 4px; align-items: start; cursor: pointer; padding: 3px; border-radius: 4px; }
+.p-th .n { font-size: 11px; color: #666; text-align: right; padding-top: 2px; }
+.p-th .box { position: relative; border: 2px solid #c8c8c8; background: #fff; overflow: hidden; border-radius: 2px; }
+.p-th.on .box { border-color: #b7472a; box-shadow: 0 0 0 1px #b7472a; }
+.p-th.over .box { border-color: #2b579a; }
+.p-th .box .p-slide { transform-origin: 0 0; position: absolute; left: 0; top: 0; pointer-events: none; }
+.p-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.p-stagebox { flex: 1; min-height: 0; overflow: auto; display: grid; place-items: center; padding: 14px; background: #d9d9d9; position: relative; touch-action: pan-x pan-y; }
+.p-stagewrap { position: relative; flex: none; box-shadow: 0 2px 12px rgba(0,0,0,.35); background: #fff; }
+.p-stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; overflow: visible; }
+.p-slide { position: relative; overflow: hidden; background: #fff; font-family: Calibri, Carlito, 'Segoe UI', Arial, sans-serif; }
+.p-obj { position: absolute; box-sizing: border-box; user-select: none; touch-action: none; }
+.p-obj .p-t { width: 100%; height: 100%; box-sizing: border-box; padding: 4px 8px; display: flex; flex-direction: column; overflow: hidden; word-break: break-word; }
+.p-obj .p-t .tx { white-space: pre-wrap; width: 100%; outline: none; }
+.p-obj .p-t .tx.bul > div { position: relative; padding-left: 1.1em; } .p-obj .p-t .tx.bul > div::before { content: '•'; position: absolute; left: .15em; }
+.p-obj svg.shp { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.p-obj img { width: 100%; height: 100%; display: block; object-fit: fill; pointer-events: none; }
+.p-obj table { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; }
+.p-obj td { border: 1px solid #bfbfbf; padding: 3px 6px; overflow: hidden; vertical-align: middle; }
+.p-stage .p-obj { cursor: move; } .p-stage .p-obj.editing { cursor: text; }
+.p-selbox { position: absolute; border: 1.5px solid #b7472a; pointer-events: none; box-sizing: border-box; }
+.p-h { position: absolute; width: 11px; height: 11px; background: #fff; border: 1.5px solid #b7472a; border-radius: 50%; pointer-events: auto; touch-action: none; margin: -5.5px 0 0 -5.5px; }
+.p-h.rot { border-radius: 50%; background: #b7472a; cursor: grab; }
+.p-notes { height: 78px; border: 0; border-top: 1px solid #c8c8c8; resize: vertical; padding: 6px 10px; font: inherit; background: #fff; min-height: 40px; max-height: 40vh; }
+.p-notes[hidden] { display: none; }
+.p-grid { position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(to right, rgba(0,0,0,.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,.12) 1px, transparent 1px); background-size: 48px 48px; }
+.p-show { position: fixed; inset: 0; background: #000; z-index: 9999; display: grid; place-items: center; overflow: hidden; cursor: none; }
+.p-show .p-slide { position: absolute; transform-origin: 0 0; }
+.p-show .ctr { position: fixed; left: 10px; bottom: 8px; color: #999; font: 12px sans-serif; opacity: 0; transition: opacity .3s; } .p-show:hover .ctr { opacity: 1; }
+.p-show .exit { position: fixed; right: 10px; top: 10px; background: rgba(255,255,255,.15); color: #fff; border: 0; border-radius: 4px; padding: 6px 10px; cursor: pointer; opacity: 0; transition: opacity .3s; } .p-show:hover .exit { opacity: 1; }
+.tr-fade { animation: pfade var(--d,1s) both; } .tr-push { animation: ppush var(--d,1s) both; } .tr-wipe { animation: pwipe var(--d,1s) both; } .tr-zoom { animation: pzoom var(--d,1s) both; } .tr-split { animation: psplit var(--d,1s) both; } .tr-cover { animation: pcover var(--d,1s) both; } .tr-dissolve { animation: pdis var(--d,1s) both; }
+@keyframes pfade { from { opacity: 0 } to { opacity: 1 } } @keyframes ppush { from { transform: translateX(var(--s0)) scale(var(--sc)); } to { transform: translateX(0) scale(var(--sc)); } }
+@keyframes pwipe { from { clip-path: inset(0 100% 0 0) } to { clip-path: inset(0 0 0 0) } } @keyframes pzoom { from { opacity: 0; transform: scale(calc(var(--sc) * .2)) } to { opacity: 1; transform: scale(var(--sc)) } }
+@keyframes psplit { from { clip-path: inset(50% 0 50% 0) } to { clip-path: inset(0 0 0 0) } } @keyframes pcover { from { transform: translateX(100%) scale(var(--sc)) } to { transform: translateX(0) scale(var(--sc)) } } @keyframes pdis { from { opacity: 0; filter: blur(12px) } to { opacity: 1; filter: blur(0) } }
+.an-fade { animation: pfade .6s both; } .an-fly { animation: pfly .6s both; } .an-zoom { animation: pobjzoom .5s both; } .an-appear { animation: none; }
+@keyframes pfly { from { opacity: 0; transform: translateX(-80px) } to { opacity: 1 } } @keyframes pobjzoom { from { opacity: 0; scale: .3 } to { opacity: 1; scale: 1 } }
+.p-print { display: none; }
+@media print { body.printing > *:not(.p-print) { display: none !important; } body.printing .p-print { display: block !important; } .p-print .pg { page-break-after: always; width: 100vw; height: 100vh; overflow: hidden; position: relative; } .p-print .pg .p-slide { transform-origin: 0 0; } }
+@media (max-width: 760px) { .app-ppt .app-content { grid-template-columns: 1fr; grid-template-rows: 92px 1fr; } .p-thumbs { flex-direction: row; border-right: 0; border-bottom: 1px solid #cfcfcf; padding: 6px; } .p-th { grid-template-columns: 1fr; flex: none; width: 110px; } .p-th .n { display: none; } .p-stagebox { padding: 8px; } }
+.app-ppt .statusbar button, .app-ppt .sb button { white-space: nowrap; }

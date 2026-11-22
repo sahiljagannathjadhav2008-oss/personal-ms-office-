@@ -141,6 +141,7 @@
     group: '<rect x="3" y="3" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/>',
     flipH: '<line x1="12" y1="3" x2="12" y2="21"/><polygon points="7 7 7 17 2 12"/><polygon points="17 7 17 17 22 12"/>'
   };
+  Object.assign(OA.icons, { users: OA.icons.group, book: OA.icons.notes, globe: OA.icons.circle, mail: OA.icons.file, edit: OA.icons.pen, quote: OA.icons.comment, bookmark: OA.icons.star, refresh: OA.icons.rotate, stamp: OA.icons.square, palette: OA.icons.bucket });
   OA.icon = (n, s) => `<svg class="ic" viewBox="0 0 24 24" width="${s || 18}" height="${s || 18}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${OA.icons[n] || ''}</svg>`;
 
   /* ------------------------------------------------------------------ ZIP */

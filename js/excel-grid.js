@@ -107,6 +107,7 @@
         const d = wb.display(sh, rr, c2); const st = d.st; const cf = cfs ? wb.evalCF(sh, rr, c2) : null; const bg = (cf && cf.bg) || st.bg;
         if (bg) { c.fillStyle = bg; c.fillRect(X, Y, w, h); }
         if (cf && cf.bar) { const bw = (w - 4) * cf.bar.pct; c.fillStyle = cf.bar.color; c.globalAlpha = 0.75; c.fillRect(X + 2, Y + 2, Math.max(1, bw), h - 4); c.globalAlpha = 1; }
+        if (sh.sparks && sh.sparks.length && XL.drawSpark) XL.drawSpark(c, wb, sh, rr, c2, X, Y, w, h);
         cellsToText.push({ r: rr, c: c2, X, Y, w, h, d, st, cf, m });
       }));
       // borders
@@ -568,7 +569,7 @@
         chartKey = k; layer.innerHTML = ''; chartEls = new Map();
         sh.charts.forEach(ch => {
           const d = el('div', { class: 'x-chart' }); d.style.pointerEvents = 'auto'; d.dataset.id = ch.id; const rs = el('div', { class: 'rs' }); d.appendChild(rs);
-          try { const holder = el('div'); holder.style.cssText = 'position:absolute;inset:0'; holder.innerHTML = XL.chartSVG(XL.chartData(wb, ch), ch, Math.round(ch.w * z), Math.round(ch.h * z)); d.insertBefore(holder, rs); } catch (err) { d.appendChild(el('div', { style: 'padding:8px;color:#a00;font-size:12px' }, ['Chart data error'])); }
+          try { const holder = el('div'); holder.style.cssText = 'position:absolute;inset:0'; holder.innerHTML = XL.chartSVG(ch.obj ? null : XL.chartData(wb, ch), ch, Math.round(ch.w * z), Math.round(ch.h * z)); d.insertBefore(holder, rs); } catch (err) { d.appendChild(el('div', { style: 'padding:8px;color:#a00;font-size:12px' }, ['Chart data error'])); }
           layer.appendChild(d); chartEls.set(ch.id, d); bindChart(d, ch, rs);
         });
       }
@@ -586,7 +587,7 @@
       d.addEventListener('dblclick', () => hooks.chartDialog && hooks.chartDialog(ch));
       d.addEventListener('contextmenu', e => { e.preventDefault(); selectChart(ch.id); hooks.chartMenu && hooks.chartMenu(e, ch); });
     }
-    g.addChart = function (ch) { const sh = g.sh(); wb.tx(() => wb.setProp(sh, 'charts', sh.charts.concat([ch]))); g.selChart = ch.id; layoutCharts(); selectChart(ch.id); hooks.onChange && hooks.onChange(); };
+    g.addChart = function (ch) { const sh = g.sh(); wb.tx(() => wb.setProp(sh, 'charts', sh.charts.concat([ch]))); g.selChart = null; layoutCharts(); selectChart(ch.id); hooks.onChange && hooks.onChange(); };
     g.deleteChart = function (id) { const sh = g.sh(); wb.tx(() => wb.setProp(sh, 'charts', sh.charts.filter(c => c.id !== id))); g.selChart = null; layoutCharts(); hooks.onChartSel && hooks.onChartSel(null); hooks.onChange && hooks.onChange(); g.draw(); };
     g.chart = () => g.selChart ? g.sh().charts.find(c => c.id === g.selChart) : null;
     g.updateChart = function (ch, patch) { wb.tx(() => Object.keys(patch).forEach(k => wb.setProp(ch, k, patch[k]))); layoutCharts(); hooks.onChange && hooks.onChange(); };

@@ -96,3 +96,53 @@
   body.printing .w-page table.dt[data-b=none] td { border: 0; }
   body.printing .w-page tr, body.printing .w-page img { break-inside: avoid; }
 }
+
+/* ---- extras: track changes, merge, references, insert, layout */
+.w-page ins.tc-ins { color: #c00000; text-decoration: underline; background: rgba(200,0,0,.06); }
+.w-page del.tc-del { color: #c00000; text-decoration: line-through; }
+.w-page.tc-hide ins.tc-ins { color: inherit; text-decoration: none; background: none; }
+.w-page.tc-hide del.tc-del { display: none; }
+.w-page.tc-on { box-shadow: 0 1px 6px rgba(0,0,0,.28), inset 3px 0 0 #c00000; }
+.w-page span.mf { background: rgba(43,87,154,.10); border-radius: 2px; padding: 0 1px; }
+.w-page.mf-hl span.mf { background: #ffe066; }
+.w-page span.mf.mfv { background: none; }
+.w-page .env { border: 1px solid #999; position: relative; margin: 0 auto 8pt; background: #fffef8; }
+.w-page .env-from { position: absolute; top: 12px; left: 14px; font-size: 10pt; }
+.w-page .env-to { position: absolute; top: 50%; left: 50%; transform: translate(-30%,-30%); font-size: 13pt; }
+.w-page table.labels td { border: 1px dashed #bbb; padding: 6px 8px; font-size: 10pt; vertical-align: top; }
+.w-page p.caption { font-size: 9pt; font-style: italic; color: #44546a; margin: 2pt 0 8pt; }
+.w-page .biblio-h, .w-page .enote-h, .w-page .toc-h { font-weight: 700; margin-bottom: 4px; }
+.w-page .enote { margin-top: 14px; padding-top: 4px; border-top: 1px solid #999; }
+.w-page .indexbox { columns: 2; border: 1px solid #ddd; padding: 6px 10px; margin: 0 0 8pt; }
+.w-page .indexbox .ix-l { margin-top: 4px; }
+.w-page span.xe { border-bottom: 1px dotted #888; }
+.w-page span.cite { color: inherit; }
+.w-page a.xref { color: #0563c1; }
+.w-page .eq { font-family: 'Cambria Math', 'Latin Modern Math', 'STIX Two Math', serif; font-size: 1.15em; }
+.w-page .wordart { display: inline-block; line-height: 1.1; }
+.w-page .tbx { box-sizing: border-box; }
+.w-page p .dcap, .w-page .dcap { float: left; font-size: 3.3em; line-height: .8; padding: 4px 6px 0 0; font-weight: 700; color: #2f5496; }
+.w-page .dcap.dcm { margin-left: -1.1em; }
+.w-page .sigline { margin: 18pt 0 8pt; }
+.w-page .sigline .sigx { font-size: 18px; color: #555; margin-right: 6px; }
+.w-page .sigline .sigl { display: inline-block; width: 220px; border-bottom: 1px solid #000; vertical-align: bottom; }
+.w-page .sect { height: 14px; margin: 6px -2px; border-top: 2px double #6a6a6a; text-align: center; font: 10px/14px Segoe UI, sans-serif; color: #555; }
+.w-page .sect[data-k=next]::after { content: 'Section Break (Next Page)'; }
+.w-page .sect.cont::after { content: 'Section Break (Continuous)'; }
+.w-page .colbrk { height: 14px; border-top: 1px dotted #888; text-align: center; font: 10px/14px Segoe UI, sans-serif; color: #777; break-after: column; }
+.w-page .colbrk::after { content: 'Column Break'; }
+.w-page .colsec { column-fill: balance; }
+.w-page.lnum { counter-reset: ln; }
+.w-page.lnum > p, .w-page.lnum > h1, .w-page.lnum > h2, .w-page.lnum > h3, .w-page.lnum > ul > li, .w-page.lnum > ol > li { counter-increment: ln; position: relative; }
+.w-page.lnum > p::before, .w-page.lnum > h1::before, .w-page.lnum > h2::before, .w-page.lnum > h3::before, .w-page.lnum > ul > li::before, .w-page.lnum > ol > li::before { content: counter(ln); position: absolute; left: -34px; width: 26px; text-align: right; font: 9px/1.9 Consolas, monospace; color: #888; }
+.w-page .wmark { position: absolute; top: 50%; left: 50%; font-size: 110px; font-weight: 700; opacity: .35; pointer-events: none; user-select: none; white-space: nowrap; z-index: 0; font-family: Calibri, Arial, sans-serif; }
+.w-page ol.legal { list-style: none; counter-reset: l1; padding-left: 28pt; }
+.w-page ol.legal > li { counter-increment: l1; } .w-page ol.legal > li::before { content: counter(l1) '. '; font-weight: 600; }
+.w-page ol.legal ol { list-style: none; counter-reset: l2; padding-left: 28pt; } .w-page ol.legal ol > li { counter-increment: l2; } .w-page ol.legal ol > li::before { content: counter(l1) '.' counter(l2) ' '; }
+.w-page ol.legal ol ol { counter-reset: l3; } .w-page ol.legal ol ol > li { counter-increment: l3; } .w-page ol.legal ol ol > li::before { content: counter(l1) '.' counter(l2) '.' counter(l3) ' '; }
+.w-page .cc { background: #eef3fb; border: 1px solid #b7c9e8; border-radius: 3px; padding: 0 4px; color: #5b6f94; cursor: pointer; }
+.w-page .cc.filled, .w-page .cc[data-t=check] { color: inherit; }
+.w-page.outline-view p:not(.bib) { display: none; }
+.w-page.outline-view h1, .w-page.outline-view h2, .w-page.outline-view h3, .w-page.outline-view h4 { display: block; }
+.form-grid textarea.inp { font-family: inherit; width: 100%; }
+@media print { .w-page .env { border: 1px solid #000; } .w-page ins.tc-ins, .w-page del.tc-del { color: #c00000; } }

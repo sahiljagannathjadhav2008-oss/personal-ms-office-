@@ -204,7 +204,7 @@
   /* ---------------- Chart */
   D.chart = function (ctx, type0, existing) {
     const { wb, g } = ctx; const sh = ctx.sh(); let q = g.range(); if (q.r1 === q.r2 && q.c1 === q.c2) q = XL.region(wb, sh, q.r1, q.c1); const e = wb.extent(sh.name); q = { r1: q.r1, c1: q.c1, r2: Math.min(q.r2, e.r), c2: Math.min(q.c2, e.c) };
-    const types = [['col', 'Column'], ['bar', 'Bar'], ['line', 'Line'], ['area', 'Area'], ['pie', 'Pie'], ['doughnut', 'Doughnut'], ['scatter', 'Scatter (XY)']];
+    const types = [['col', 'Column'], ['bar', 'Bar'], ['line', 'Line'], ['area', 'Area'], ['pie', 'Pie'], ['doughnut', 'Doughnut'], ['scatter', 'Scatter (XY)']].concat(XL.CHART_TYPES_EXTRA || []);
     const t = sel(types, existing ? existing.type : (type0 || 'col')), title = inp(existing ? existing.title : 'Chart Title'), ref = inp(existing ? existing.ref : XL.sheetRef(sh, q)), rs = chk('Series rows mein hain (Switch Row/Column)', existing ? existing.rowsAsSeries : false), lg = chk('Legend dikhayein', existing ? existing.legend !== false : true), st = chk('Stacked', existing ? !!existing.stacked : false);
     OA.dialog({ title: existing ? 'Change Chart' : 'Insert Chart', width: 420, content: el('div', { class: 'form-grid' }, [lab('Chart type', t), lab('Title', title), lab('Data range', ref), rs.row, lg.row, st.row]), buttons: [{ label: 'Cancel', value: false }, { label: 'OK', primary: true, onClick: () => {
       const patch = { type: t.value, title: title.value, ref: ref.value.replace(/^=/, ''), rowsAsSeries: rs.i.checked, legend: lg.i.checked, stacked: st.i.checked };

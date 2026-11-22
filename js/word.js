@@ -211,6 +211,7 @@
             { label: 'Delete', items: [L('pdl', 'Delete picture', 'trash', () => ed.imageOp('delete'))] }] }
         ]
       };
+      (OA.wordExtras || []).forEach(f => f(ed, { B, L, G, el }, spec));
       const right = el('div', { class: 'rtab-right' });
       spec.right = right;
       rb = OA.buildRibbon(sh.ribbon, spec);

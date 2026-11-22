@@ -624,6 +624,7 @@
   def('DECIMAL', a => parseInt(toStr(a[0]), toNum(a[1]))); def('BIN2DEC', a => parseInt(toStr(a[0]), 2)); def('DEC2BIN', a => toNum(a[0]).toString(2)); def('HEX2DEC', a => parseInt(toStr(a[0]), 16)); def('DEC2HEX', a => toNum(a[0]).toString(16).toUpperCase());
   // name resolution for LET locals: patch evalNode name
   const baseName = evalNode;
+  XL.fn = { evalNode, val, def, nums, toNum, toStr, toBool, matOf, E, isMat, isErr, isRef, asMat, scalar, flatten, cmpVals };
   XL.FDOC = {
     Math: ['SUM', 'SUMIF', 'SUMIFS', 'SUMPRODUCT', 'PRODUCT', 'ROUND', 'ROUNDUP', 'ROUNDDOWN', 'INT', 'MOD', 'ABS', 'POWER', 'SQRT', 'EXP', 'LN', 'LOG', 'LOG10', 'PI', 'CEILING', 'FLOOR', 'MROUND', 'TRUNC', 'SIGN', 'RAND', 'RANDBETWEEN', 'FACT', 'GCD', 'LCM', 'COMBIN', 'SIN', 'COS', 'TAN', 'ATAN2', 'DEGREES', 'RADIANS', 'SUBTOTAL', 'SEQUENCE'],
     Statistical: ['AVERAGE', 'AVERAGEIF', 'AVERAGEIFS', 'COUNT', 'COUNTA', 'COUNTBLANK', 'COUNTIF', 'COUNTIFS', 'MAX', 'MAXIFS', 'MIN', 'MINIFS', 'MEDIAN', 'MODE', 'STDEV', 'STDEV.P', 'VAR', 'VAR.P', 'LARGE', 'SMALL', 'RANK', 'PERCENTILE', 'QUARTILE', 'CORREL', 'SLOPE', 'INTERCEPT', 'FORECAST'],

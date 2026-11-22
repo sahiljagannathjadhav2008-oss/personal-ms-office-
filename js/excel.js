@@ -78,13 +78,13 @@
         onSel() { updateBar(); syncRibbon(); }, onEditState(on) { editing = on; sbMode.textContent = on ? (g.editing && g.editing.mode === 'edit' ? 'Edit' : 'Enter') : 'Ready'; if (!on) { fin.value = g.activeText(); } },
         onZoom(z) { zoomLbl.textContent = Math.round(z * 100) + '%'; zoomRange.value = Math.round(z * 100); }, onChange() { dirty = true; updateBar(); },
         activateSheet: n => activate(wb.sheets.findIndex(s => s.name === n)), cmd: c => command(c), filterMenu: (c, anchor) => XL.dlg.filterMenu(ctx, c, anchor),
-        contextMenu: (e, h) => ctxMenu(e, h), chartDialog: ch => XL.dlg.chart(ctx, null, ch), chartMenu: (e, ch) => OA.menu({ left: e.clientX, top: e.clientY, right: e.clientX, bottom: e.clientY }, [{ label: 'Change Chart…', onClick: () => XL.dlg.chart(ctx, null, ch) }, { label: 'Delete Chart', icon: 'trash', onClick: () => g.deleteChart(ch.id) }]),
-        onChartSel: ch => { if (rb) { rb.setTabVisible('chart', !!ch); if (ch) rb.showTab('chart'); } }, onTip: t => { sbMode.textContent = t || (editing ? 'Edit' : 'Ready'); }
+        contextMenu: (e, h) => ctxMenu(e, h), chartDialog: ch => ch.obj ? XL.objDialog(ctx, ch) : XL.dlg.chart(ctx, null, ch), chartMenu: (e, ch) => OA.menu({ left: e.clientX, top: e.clientY, right: e.clientX, bottom: e.clientY }, [{ label: 'Change Chart…', onClick: () => XL.dlg.chart(ctx, null, ch) }, { label: 'Delete Chart', icon: 'trash', onClick: () => g.deleteChart(ch.id) }]),
+        onChartSel: ch => { if (rb) { rb.setTabVisible('chart', !!ch && !ch.obj); rb.setTabVisible('shape', !!ch && !!ch.obj); if (ch) rb.showTab(ch.obj ? 'shape' : 'chart'); } }, onTip: t => { sbMode.textContent = t || (editing ? 'Edit' : 'Ready'); }
       };
       function setBook(nb) {
         if (g) { g.destroy(); host.innerHTML = ''; }
         wb = nb; wb.activeIndex = Math.min(wb.activeIndex || 0, wb.sheets.length - 1); wb.onChange = () => { dirty = true; g.refresh(); updateBar(); syncRibbon(); };
-        g = XL.createGrid(host, wb, hooks); g.bindBar(fin); g.sheetChanged(); renderTabs(); updateBar(); syncRibbon(); if (rb) rb.showTab('home'); hooks.onChartSel(null); g.focus(); dirty = false;
+        g = XL.createGrid(host, wb, hooks); (XL.gridHooks || []).forEach(f => f(g, ctx)); g.bindBar(fin); g.sheetChanged(); renderTabs(); updateBar(); syncRibbon(); if (rb) rb.showTab('home'); hooks.onChartSel(null); g.focus(); dirty = false;
       }
       function activate(i) { if (i < 0 || i >= wb.sheets.length) return; if (g.editing) g.commit(0, 0, true); g.saveScroll(); wb.activeIndex = i; g.sheetChanged(); renderTabs(); updateBar(); syncRibbon(); }
       function renderTabs() {
@@ -94,10 +94,10 @@
         tabs.append(el('button', { class: 'tbtn', type: 'button', text: '‹', title: 'Scroll tabs left', onclick: () => list.scrollBy(-120, 0) }), el('button', { class: 'tbtn', type: 'button', text: '›', title: 'Scroll tabs right', onclick: () => list.scrollBy(120, 0) }), list, el('button', { class: 'tbtn', type: 'button', text: '+', title: 'New sheet (Shift+F11)', onclick: addSheet }));
         const on = list.querySelector('.on'); on && on.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       }
-      function addSheet() { wb.tx(() => wb.addSheet(wb.uniqueName('Sheet'), wb.activeIndex + 1)); activate(wb.activeIndex + 1); dirty = true; }
-      async function renameSheet(i) { const s = wb.sheets[i]; const n = await OA.prompt('Sheet name:', s.name, { title: 'Rename Sheet' }); if (n && n !== s.name) { if (/[\\/?*\[\]:]/.test(n) || n.length > 31) return OA.alert('Sheet name mein \\ / ? * [ ] : nahi ho sakte (max 31 chars).'); if (wb.hasSheet(n)) return OA.alert('Is naam ka sheet pehle se hai.'); wb.tx(() => wb.renameSheet(s, n)); renderTabs(); g.refresh(); } }
-      async function delSheet(i) { if (wb.sheets.length < 2) return OA.alert('Workbook mein kam se kam ek sheet rehni chahiye.'); if (!await OA.confirm('Sheet "' + wb.sheets[i].name + '" delete karein? Ise Undo se wapas la sakte hain.', { ok: 'Delete' })) return; wb.tx(() => wb.deleteSheet(wb.sheets[i])); wb.activeIndex = Math.min(wb.activeIndex, wb.sheets.length - 1); g.sheetChanged(); renderTabs(); updateBar(); }
-      function moveSheet(i, to) { const act = wb.sheets[wb.activeIndex]; wb.tx(() => wb.moveSheet(wb.sheets[i], to)); wb.activeIndex = wb.sheets.indexOf(act); renderTabs(); g.refresh(); }
+      function addSheet() { if (ctx.wbProtect) return toast('Workbook structure protected hai'); wb.tx(() => wb.addSheet(wb.uniqueName('Sheet'), wb.activeIndex + 1)); activate(wb.activeIndex + 1); dirty = true; }
+      async function renameSheet(i) { if (ctx.wbProtect) return toast('Workbook structure protected hai'); const s = wb.sheets[i]; const n = await OA.prompt('Sheet name:', s.name, { title: 'Rename Sheet' }); if (n && n !== s.name) { if (/[\\/?*\[\]:]/.test(n) || n.length > 31) return OA.alert('Sheet name mein \\ / ? * [ ] : nahi ho sakte (max 31 chars).'); if (wb.hasSheet(n)) return OA.alert('Is naam ka sheet pehle se hai.'); wb.tx(() => wb.renameSheet(s, n)); renderTabs(); g.refresh(); } }
+      async function delSheet(i) { if (ctx.wbProtect) return toast('Workbook structure protected hai'); if (wb.sheets.length < 2) return OA.alert('Workbook mein kam se kam ek sheet rehni chahiye.'); if (!await OA.confirm('Sheet "' + wb.sheets[i].name + '" delete karein? Ise Undo se wapas la sakte hain.', { ok: 'Delete' })) return; wb.tx(() => wb.deleteSheet(wb.sheets[i])); wb.activeIndex = Math.min(wb.activeIndex, wb.sheets.length - 1); g.sheetChanged(); renderTabs(); updateBar(); }
+      function moveSheet(i, to) { if (ctx.wbProtect) return toast('Workbook structure protected hai'); const act = wb.sheets[wb.activeIndex]; wb.tx(() => wb.moveSheet(wb.sheets[i], to)); wb.activeIndex = wb.sheets.indexOf(act); renderTabs(); g.refresh(); }
 
       /* ---------- formatting helpers */
       const eachRange = fn => g.ranges().forEach(q => { const r = { r1: Math.min(q.r1, q.r2), c1: Math.min(q.c1, q.c2), r2: Math.max(q.r1, q.r2), c2: Math.max(q.c1, q.c2) }; if (r.r1 === 0 && r.r2 >= MAXR - 1) r.fullCol = true; else if (r.c1 === 0 && r.c2 >= MAXC - 1) r.fullRow = true; fn(r); });
@@ -153,11 +153,25 @@
 
       /* ---------- file I/O */
       const used = s => { const u = wb.usedRange(s); return u && u.r2 >= 0 ? u : null; };
-      function printBox() { wb.ensureCalc(); const box = el('div', { class: 'x-print' + (page.grid ? ' grid' : '') }); if (page.title) box.appendChild(el('div', { style: 'text-align:center;font-weight:bold;margin-bottom:6px', text: page.title })); wb.sheets.forEach(s => { const u = used(s); if (!u) return; box.appendChild(el('h3', { text: s.name })); const d = el('div'); d.innerHTML = wb.rangeHTML(s, u); box.appendChild(d); }); return box; }
+      function printBox() {
+        wb.ensureCalc(); const box = el('div', { class: 'x-print' + (page.grid ? ' grid' : '') + (page.headings ? ' heads' : '') }); if (page.title) box.appendChild(el('div', { style: 'text-align:center;font-weight:bold;margin-bottom:6px', text: page.title }));
+        (page.activeOnly ? [g.sh()] : wb.sheets).forEach(s => {
+          const u = s.printArea || used(s); if (!u) return; box.appendChild(el('h3', { text: s.name })); const d = el('div'); d.innerHTML = wb.rangeHTML(s, u);
+          const tbl = d.querySelector('table'); const t = s.titleRows;
+          if (tbl && t && t.r1 >= 0) { const thead = document.createElement('thead'); if (t.r1 >= u.r1 && t.r1 <= u.r2) { const n = Math.min(t.r2, u.r2) - t.r1 + 1; for (let i = 0; i < n && tbl.rows.length; i++) thead.appendChild(tbl.rows[t.r1 - u.r1]); } else { const th = el('div'); th.innerHTML = wb.rangeHTML(s, { r1: t.r1, c1: u.c1, r2: t.r2, c2: u.c2 }); const tt = th.querySelector('table'); if (tt) Array.from(tt.rows).forEach(r => thead.appendChild(r)); } if (thead.rows.length) tbl.insertBefore(thead, tbl.firstChild); }
+          if (page.center) d.style.textAlign = 'center'; box.appendChild(d);
+        });
+        return box;
+      }
+      const PAPER = { A4: [210, 297], Letter: [215.9, 279.4], Legal: [215.9, 355.6], A3: [297, 420], A5: [148, 210] }, MARG = { Normal: 12, Wide: 25, Narrow: 6 };
+      function hfContent(t) { if (!t) return '""'; const parts = []; String(t).split(/(&P|&N|&D|&T|&F|&A)/).forEach(x => { if (!x) return; if (x === '&P') parts.push('counter(page)'); else if (x === '&N') parts.push('counter(pages)'); else if (x === '&D') parts.push(JSON.stringify(new Date().toLocaleDateString())); else if (x === '&T') parts.push(JSON.stringify(new Date().toLocaleTimeString())); else if (x === '&F') parts.push(JSON.stringify(baseName())); else if (x === '&A') parts.push(JSON.stringify(g.sh().name)); else parts.push(JSON.stringify(x)); }); return parts.join(' ') || '""'; }
       function doPrint() {
         const box = printBox(); if (!box.children.length) return toast('Print karne ke liye kuch data nahi hai');
-        const stl = el('style', { text: '@page{size:' + (page.orient === 'landscape' ? 'landscape' : 'portrait') + ';margin:12mm}' }); document.head.appendChild(stl); document.body.appendChild(box); document.body.classList.add('printing');
-        const done = () => { document.body.classList.remove('printing'); box.remove(); stl.remove(); window.removeEventListener('afterprint', done); }; window.addEventListener('afterprint', done); setTimeout(() => window.print(), 60); setTimeout(() => { if (document.body.classList.contains('printing') && !document.hasFocus()) { /* keep */ } }, 500);
+        const pp = PAPER[page.paper || 'A4'], land = page.orient === 'landscape', m = MARG[page.margin || 'Normal'] || 12; const hf = page.hf || {};
+        const css = '@page{size:' + (page.paper || 'A4') + ' ' + (land ? 'landscape' : 'portrait') + ';margin:' + m + 'mm' + (hf.h || hf.f ? ' ' + Math.max(m, 15) + 'mm' : '') + ';' + [['top', 'h'], ['bottom', 'f']].map(([pos, k]) => ['left', 'center', 'right'].map(al => '@' + pos + '-' + al + '{content:' + hfContent((hf[k] || {})[al]) + ';font:9pt Calibri,Arial,sans-serif;color:#333}').join('')).join('') + '}';
+        const stl = el('style', { text: css }); document.head.appendChild(stl); document.body.appendChild(box); document.body.classList.add('printing');
+        let sc = 1; if (page.fit) { const availPx = ((land ? pp[1] : pp[0]) - 2 * m) / 25.4 * 96; const w = Math.max(...Array.from(box.querySelectorAll('table')).map(t => t.scrollWidth), 1); sc = Math.min(1, availPx / w); } else if (page.scale && page.scale !== 100) sc = page.scale / 100; if (sc !== 1) box.style.zoom = sc;
+        const done = () => { document.body.classList.remove('printing'); box.remove(); stl.remove(); window.removeEventListener('afterprint', done); }; window.addEventListener('afterprint', done); setTimeout(() => window.print(), 60);
       }
       async function doExport(kind) {
         const n = baseName();
@@ -189,7 +203,7 @@
       const borderMenu = [['All Borders', 'all'], ['Outside Borders', 'outer'], ['Inside Borders', 'inner'], ['Top Border', 'top'], ['Bottom Border', 'bottom'], ['Left Border', 'left'], ['Right Border', 'right'], ['Top and Bottom Border', 'topbottom'], ['No Border', 'none']].map(([l, m]) => ({ label: l, onClick: () => { wb.tx(() => eachRange(r => wb.applyBorders(g.sh(), r, m, 'thin', '#000000'))); } })).concat([{ sep: true }, { label: 'Thick Outside Border', onClick: () => wb.tx(() => eachRange(r => wb.applyBorders(g.sh(), r, 'outer', 'thick', '#000000'))) }, { label: 'More Borders…', onClick: () => XL.dlg.formatCells(ctx, 'Border') }]);
       const mergeMenu = [{ label: 'Merge & Center', onClick: () => { wb.tx(() => eachRange(r => { if (r.r2 > r.r1 || r.c2 > r.c1) { wb.merge(g.sh(), r); wb.applyStyle(g.sh(), { r1: r.r1, c1: r.c1, r2: r.r1, c2: r.c1 }, { ha: 'center' }); } })); } }, { label: 'Merge Cells', onClick: () => wb.tx(() => eachRange(r => (r.r2 > r.r1 || r.c2 > r.c1) && wb.merge(g.sh(), r))) }, { label: 'Unmerge Cells', onClick: () => wb.tx(() => eachRange(r => wb.unmerge(g.sh(), r))) }];
       const cfMenu = [{ header: 'Highlight Cells Rules' }, { label: 'Greater Than / Less Than / Between…', onClick: () => XL.dlg.cfRule(ctx, 'cell') }, { label: 'Text that Contains…', onClick: () => XL.dlg.cfRule(ctx, 'text') }, { label: 'Duplicate Values…', onClick: () => XL.dlg.cfRule(ctx, 'dup') }, { header: 'Top/Bottom Rules' }, { label: 'Top 10 Items…', onClick: () => XL.dlg.cfRule(ctx, 'top') }, { label: 'Bottom 10 Items…', onClick: () => XL.dlg.cfRule(ctx, 'bottom') }, { label: 'Above / Below Average…', onClick: () => XL.dlg.cfRule(ctx, 'avg') }, { header: 'Visuals' }, { label: 'Data Bars', onClick: () => XL.dlg.cfRule(ctx, 'databar') }, { label: 'Color Scales', onClick: () => XL.dlg.cfRule(ctx, 'scale') }, { label: 'Icon Sets', onClick: () => XL.dlg.cfRule(ctx, 'icons') }, { header: 'Other' }, { label: 'New Rule (Formula)…', onClick: () => XL.dlg.cfRule(ctx, 'formula') }, { label: 'Clear Rules from Selected Cells', onClick: () => { eachRange(r => wb.clearCF(g.sh(), r)); ctx.after(); } }, { label: 'Clear Rules from Entire Sheet', onClick: () => { wb.clearCF(g.sh(), null); ctx.after(); } }, { label: 'Manage Rules…', onClick: () => XL.dlg.manageCF(ctx) }];
-      const chartMenu = [['col', 'Column'], ['bar', 'Bar'], ['line', 'Line'], ['area', 'Area'], ['pie', 'Pie'], ['doughnut', 'Doughnut'], ['scatter', 'Scatter']].map(([k, l]) => ({ label: l + ' Chart…', onClick: () => XL.dlg.chart(ctx, k) }));
+      const chartMenu = [['col', 'Column'], ['bar', 'Bar'], ['line', 'Line'], ['area', 'Area'], ['pie', 'Pie'], ['doughnut', 'Doughnut'], ['scatter', 'Scatter']].concat(XL.CHART_TYPES_EXTRA || []).map(([k, l]) => ({ label: l + ' Chart…', onClick: () => XL.dlg.chart(ctx, k) }));
       const fontSel = { type: 'combo', id: 'font', options: XL.FONTS, width: 120, value: 'Calibri', title: 'Font', inputmode: 'text', onChange: v => v && fmt({ font: v === 'Calibri' ? null : v }) };
       const sizeSel = { type: 'combo', id: 'size', options: ['8', '9', '10', '11', '12', '14', '16', '18', '20', '24', '28', '36', '48', '72'], width: 46, value: '11', title: 'Font size', onChange: v => { const n = parseFloat(v); if (n > 0 && n < 410) fmt({ sz: n === 11 ? null : n }); } };
       const nfSel = { type: 'select', id: 'nf', options: Object.keys(NF), width: 120, title: 'Number Format', onChange: v => fmt({ nf: NF[v] === 'General' ? null : NF[v] }) };
@@ -239,6 +253,8 @@
         ]
       };
       const resizeSoon = () => setTimeout(() => window.dispatchEvent(new Event('resize')), 30);
+      ctx.H = { B, L, G, el, fmt, eachRange, curSt, toast, page, command, doPrint, autosum, importCSV, root, host, get rb() { return rb; }, get dirty() { return dirty; }, set dirty(v) { dirty = v; }, updateBar, syncRibbon, activate, renderTabs };
+      (XL.extras || []).forEach(f => f(ctx, spec, ctx.H));
       spec.right = el('div', { class: 'rtab-right' }); rb = OA.buildRibbon(sh.ribbon, spec); const ctl = rb.ctl;
       function syncRibbon() {
         if (!rb || !g) return; const s = curSt(); rb.setOn('b', s.b); rb.setOn('i', s.i); rb.setOn('u', s.u); rb.setOn('wrap', s.wrap); rb.setOn('al', s.ha === 'left'); rb.setOn('ac', s.ha === 'center'); rb.setOn('ar', s.ha === 'right');

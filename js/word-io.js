@@ -114,7 +114,11 @@
       if (t === 'BR') { out += `<w:r>${rPr(s)}<w:br/></w:r>`; return; }
       if (t === 'IMG') { const info = st.imgs.get(n); if (info) out += drawing(info, st); return; }
       if (t === 'SCRIPT' || t === 'STYLE') return;
+      if (n.classList && n.classList.contains('eq')) { out += textRuns(n.getAttribute('data-lin') || n.textContent, Object.assign({}, s, { i: 1, font: 'Cambria Math' }), pre); return; }
+      if (n.classList && n.classList.contains('mf')) { out += textRuns(n.textContent, s, pre); return; }
       const ns = runStyle(n, s);
+      if (t === 'INS' && n.classList.contains('tc-ins')) { out += `<w:ins w:id="${++st.tcid}" w:author="${xe(n.dataset.by || 'Author')}" w:date="${new Date().toISOString().slice(0, 19)}Z">${inline(Array.from(n.childNodes), st, ns, pre)}</w:ins>`; return; }
+      if (t === 'DEL' && n.classList.contains('tc-del')) { out += `<w:del w:id="${++st.tcid}" w:author="${xe(n.dataset.by || 'Author')}" w:date="${new Date().toISOString().slice(0, 19)}Z">${inline(Array.from(n.childNodes), st, ns, pre).replace(/<w:t( |>)/g, '<w:delText$1').replace(/<\/w:t>/g, '</w:delText>')}</w:del>`; return; }
       const kids = inline(Array.from(n.childNodes), st, ns, pre || t === 'PRE');
       if (t === 'A' && n.getAttribute('href')) {
         const href = n.getAttribute('href');
@@ -324,7 +328,7 @@ ${hd('Heading6', 'heading 6', 22, '1F3763', '', 80, 40)}
   W.toDocx = async function (root, o) {
     o = Object.assign({ page: W.PAGES.A4, landscape: false, margins: { t: 1440, r: 1440, b: 1440, l: 1440 }, cols: 1, header: '', footer: '', pageNum: 'none', title: 'Document', pageColor: null }, o || {});
     let pw = o.page.w, ph = o.page.h; if (o.landscape) { const t = pw; pw = ph; ph = t; }
-    const st = { imgs: new Map(), links: new Map(), nums: [], docPr: 0, textW: pw - o.margins.l - o.margins.r };
+    const st = { tcid: 0, imgs: new Map(), links: new Map(), nums: [], docPr: 0, textW: pw - o.margins.l - o.margins.r };
     await prepImages(root, st, st.textW / 15);
     let body = blocks(root, st, {});
     if (!body) body = '<w:p/>';

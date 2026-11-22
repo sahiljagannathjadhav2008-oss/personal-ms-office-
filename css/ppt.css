@@ -42,3 +42,32 @@
 @media print { body.printing > *:not(.p-print) { display: none !important; } body.printing .p-print { display: block !important; } .p-print .pg { page-break-after: always; width: 100vw; height: 100vh; overflow: hidden; position: relative; } .p-print .pg .p-slide { transform-origin: 0 0; } }
 @media (max-width: 760px) { .app-ppt .app-content { grid-template-columns: 1fr; grid-template-rows: 92px 1fr; } .p-thumbs { flex-direction: row; border-right: 0; border-bottom: 1px solid #cfcfcf; padding: 6px; } .p-th { grid-template-columns: 1fr; flex: none; width: 110px; } .p-th .n { display: none; } .p-stagebox { padding: 8px; } }
 .app-ppt .statusbar button, .app-ppt .sb button { white-space: nowrap; }
+.p-obj .p-t .tx.num { counter-reset: pn; } .p-obj .p-t .tx.num > div { counter-increment: pn; position: relative; padding-left: 1.6em; } .p-obj .p-t .tx.num > div::before { content: counter(pn) '.'; position: absolute; left: 0; }
+.p-obj svg { max-width: none; } .p-obj .p-eq math { font-size: inherit; }
+.p-panel { flex: 1; overflow: auto; background: #e6e6e6; padding: 12px; }
+.p-pbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; } .p-pbar span { color: #666; font-size: 12px; flex: 1; }
+.p-outline-ta { width: 100%; height: calc(100% - 50px); min-height: 300px; font: 16px/1.5 Calibri, sans-serif; padding: 12px; border: 1px solid #bbb; tab-size: 4; box-sizing: border-box; }
+.p-sorter { display: flex; flex-wrap: wrap; gap: 14px; } .p-scell { cursor: pointer; } .p-scell .cap { text-align: center; font-size: 12px; color: #444; margin-top: 3px; }
+.p-sec { font-size: 11px; font-weight: 700; color: #b7472a; padding: 3px 4px; cursor: pointer; border-bottom: 1px solid #ddd; }
+.p-notespg { max-width: 640px; margin: 0 auto; }
+.p-stagebox.p-ruler { box-shadow: inset 0 14px 0 -8px #ccc; }
+.p-stage.p-guides::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to right, transparent calc(50% - .5px), rgba(255,0,0,.4) calc(50% - .5px), rgba(255,0,0,.4) calc(50% + .5px), transparent calc(50% + .5px)), linear-gradient(to bottom, transparent calc(50% - .5px), rgba(255,0,0,.4) calc(50% - .5px), rgba(255,0,0,.4) calc(50% + .5px), transparent calc(50% + .5px)); }
+.p-th .p-cmt, .p-print .p-cmt, .p-scell .p-cmt { display: none; }
+
+/* x3: slide show engine, animation pane */
+.ps2 { cursor: none; } .ps2.mv, .ps2[data-tool="pen"], .ps2[data-tool="hl"], .ps2[data-tool="eraser"] { cursor: default; } .ps2[data-tool="laser"] { cursor: none; }
+.ps-host { position: absolute; inset: 0; } .ps-sl { position: absolute; overflow: hidden; background: #fff; } .ps-sl .p-slide { position: absolute; }
+.ps-tb { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); display: flex; gap: 4px; align-items: center; background: rgba(30,30,30,.85); padding: 4px 8px; border-radius: 8px; opacity: 0; transition: opacity .25s; z-index: 10001; } .ps2.mv .ps-tb, .ps-tb:hover { opacity: 1; }
+.ps-b { background: transparent; color: #fff; border: 0; border-radius: 4px; min-width: 30px; height: 30px; font-size: 15px; cursor: pointer; padding: 0 6px; } .ps-b:hover { background: rgba(255,255,255,.2); } .ps-b.on { background: #b7472a; }
+.ps-cols { display: inline-flex; gap: 3px; margin: 0 4px; } .ps-cols i { width: 16px; height: 16px; border-radius: 50%; border: 1px solid #fff8; cursor: pointer; }
+.ps-laser { display: none; position: fixed; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: radial-gradient(#f00 30%, rgba(255,0,0,.35) 70%, transparent); pointer-events: none; z-index: 10002; }
+.ps-blank { position: fixed; inset: 0; z-index: 9000; } .ps-end { position: fixed; inset: 0; z-index: 9000; background: #000; color: #aaa; display: grid; place-items: center; font: 20px sans-serif; }
+.ps-rehearse { position: fixed; left: 10px; top: 10px; background: rgba(0,0,0,.7); color: #fff; padding: 6px 10px; border-radius: 6px; font: 13px sans-serif; z-index: 10001; }
+.ps-grid { position: fixed; inset: 0; background: rgba(0,0,0,.88); z-index: 10003; overflow: auto; display: flex; flex-wrap: wrap; gap: 14px; padding: 24px; align-content: flex-start; cursor: default; }
+.ps-grid .gi { color: #fff; font: 12px sans-serif; text-align: center; cursor: pointer; } .ps-grid .gb { overflow: hidden; background: #fff; border: 3px solid transparent; } .ps-grid .gi.cur .gb { border-color: #b7472a; } .ps-grid .gi.hid .gb { opacity: .4; }
+.ps-help { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); background: #fff; color: #222; padding: 18px 22px; border-radius: 10px; font: 14px/1.7 sans-serif; z-index: 10004; max-width: 90vw; cursor: pointer; }
+.ps2.pv .ps-pv { position: fixed; right: 0; top: 0; bottom: 0; width: 38%; background: #1b1b1b; color: #eee; padding: 14px; overflow: auto; z-index: 9500; display: flex; flex-direction: column; gap: 8px; font: 14px sans-serif; cursor: default; }
+.ps-pv .pv-hd { display: flex; gap: 14px; align-items: center; } .ps-pv .pv-hd b { flex: 1; } .ps-pv .pv-timer { font-size: 22px; color: #6fdc8c; } .ps-pv .pv-lbl { color: #888; font-size: 12px; } .ps-pv .pv-next { background: #fff; overflow: hidden; } .ps-pv .pv-notes { flex: 1; min-height: 80px; overflow: auto; white-space: pre-wrap; background: #262626; padding: 10px; border-radius: 6px; } .ps-pv .pv-btns { display: flex; gap: 6px; flex-wrap: wrap; } .ps-pv .ps-b { background: #333; }
+.p-anipane { position: absolute; right: 8px; top: 120px; width: 250px; max-height: 60%; overflow: auto; background: #fff; border: 1px solid #bbb; box-shadow: 0 4px 16px rgba(0,0,0,.25); z-index: 40; border-radius: 6px; font: 13px sans-serif; }
+.ap-row { display: flex; gap: 6px; align-items: center; padding: 6px 8px; border-bottom: 1px solid #eee; cursor: pointer; } .ap-row.sel { background: #fde9e1; } .ap-n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ap-row i { font-style: normal; } .ap-row .c-entr { color: #3a9d4b; } .ap-row .c-emph { color: #d9a400; } .ap-row .c-exit { color: #c33; } .ap-row .c-path { color: #36c; } .ap-empty { padding: 12px; color: #777; }
+.p-abadge { position: absolute; left: -22px; top: 0; background: #b7472a; color: #fff; font: 11px sans-serif; padding: 1px 5px; border-radius: 3px; pointer-events: none; }

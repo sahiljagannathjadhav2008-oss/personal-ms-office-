@@ -42,7 +42,8 @@
     function curRange() { const s = gs(); return s.rangeCount && inPage(s.getRangeAt(0).commonAncestorContainer) ? s.getRangeAt(0) : null; }
     document.addEventListener('selectionchange', () => { const r = curRange(); if (r) saved = r.cloneRange(); scheduleState(); });
     function restore() {
-      if (document.activeElement !== page) page.focus({ preventScroll: true });
+      const wasFocused = document.activeElement === page, sv = saved && saved.cloneRange();
+      if (!wasFocused) { page.focus({ preventScroll: true }); if (sv && inPage(sv.commonAncestorContainer)) { const s0 = gs(); s0.removeAllRanges(); s0.addRange(sv); saved = sv.cloneRange(); } }
       if (saved && inPage(saved.commonAncestorContainer)) { const s = gs(); const cur = s.rangeCount ? s.getRangeAt(0) : null; if (!cur || !inPage(cur.commonAncestorContainer)) { s.removeAllRanges(); s.addRange(saved); } }
       else { const s = gs(); if (!s.rangeCount || !inPage(s.getRangeAt(0).commonAncestorContainer)) { const r = document.createRange(); r.selectNodeContents(page); r.collapse(false); s.removeAllRanges(); s.addRange(r); } }
     }
@@ -728,6 +729,7 @@
       const inner = h - PX(layout.margins.t) - PX(layout.margins.b);
       const contentH = page.scrollHeight - PX(layout.margins.t) - PX(layout.margins.b);
       const brk = page.querySelectorAll('.pb').length;
+      ed.pageDims = pageDims;
       ed.pageCount = web ? 1 : Math.max(1, Math.ceil(Math.max(1, contentH) / inner) + brk);
       // header / footer overlays
       hfHost.innerHTML = '';

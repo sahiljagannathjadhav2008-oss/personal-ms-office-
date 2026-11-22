@@ -29,12 +29,12 @@
   function txt(deck, o) { const t = T(deck); return Object.assign({ id: uid(), type: 'text', text: '', font: t.font, sz: 24, color: t.fg, ha: 'left', va: 'top' }, o); }
   function layoutObjs(deck, lay, h) {
     const t = T(deck), W = deck.w, H = deck.h || 540; const k = W / 960;
-    const title = (o) => txt(deck, Object.assign({ x: 60 * k, y: 36 * k, w: W - 120 * k, h: 90 * k, text: 'Click to add title', sz: 40, b: true, va: 'middle', color: t.accent }, o));
-    const body = (o) => txt(deck, Object.assign({ x: 60 * k, y: 140 * k, w: W - 120 * k, h: H - 190 * k, text: 'Click to add text\nSecond level point\nThird level point', sz: 26, bullet: true }, o));
+    const title = (o) => txt(deck, Object.assign({ x: 60 * k, y: 36 * k, w: W - 120 * k, h: 90 * k, text: 'Click to add title', sz: 40, b: true, va: 'middle', color: t.accent, ph: 'title' }, o));
+    const body = (o) => txt(deck, Object.assign({ x: 60 * k, y: 140 * k, w: W - 120 * k, h: H - 190 * k, text: 'Click to add text\nSecond level point\nThird level point', sz: 26, bullet: true, ph: 'body' }, o));
     switch (lay) {
-      case 'title': return [txt(deck, { x: 90 * k, y: H * 0.28, w: W - 180 * k, h: 120 * k, text: 'Presentation Title', sz: 54, b: true, ha: 'center', va: 'middle', color: t.accent }), txt(deck, { x: 140 * k, y: H * 0.28 + 130 * k, w: W - 280 * k, h: 70 * k, text: 'Subtitle or author name', sz: 26, ha: 'center', va: 'top' })];
+      case 'title': return [txt(deck, { x: 90 * k, y: H * 0.28, w: W - 180 * k, h: 120 * k, text: 'Presentation Title', sz: 54, b: true, ha: 'center', va: 'middle', color: t.accent, ph: 'title' }), txt(deck, { x: 140 * k, y: H * 0.28 + 130 * k, w: W - 280 * k, h: 70 * k, text: 'Subtitle or author name', sz: 26, ha: 'center', va: 'top', ph: 'body' })];
       case 'content': return [title(), body()];
-      case 'section': return [txt(deck, { x: 80 * k, y: H * 0.34, w: W - 160 * k, h: 100 * k, text: 'Section Title', sz: 48, b: true, va: 'bottom', color: t.accent }), txt(deck, { x: 80 * k, y: H * 0.34 + 110 * k, w: W - 160 * k, h: 60 * k, text: 'Short description', sz: 24 })];
+      case 'section': return [txt(deck, { x: 80 * k, y: H * 0.34, w: W - 160 * k, h: 100 * k, text: 'Section Title', sz: 48, b: true, va: 'bottom', color: t.accent, ph: 'title' }), txt(deck, { x: 80 * k, y: H * 0.34 + 110 * k, w: W - 160 * k, h: 60 * k, text: 'Short description', sz: 24 })];
       case 'two': return [title(), body({ w: (W - 150 * k) / 2 }), body({ x: 60 * k + (W - 150 * k) / 2 + 30 * k, w: (W - 150 * k) / 2 })];
       case 'titleonly': return [title()];
       default: return [];
@@ -65,15 +65,16 @@
       if (hasText || opts.edit) {
         const box = el('div', { class: 'p-t' }); const jc = { top: 'flex-start', middle: 'center', bottom: 'flex-end' }[o.va || (o.type === 'shape' ? 'middle' : 'top')]; box.style.justifyContent = jc || 'flex-start';
         const tx = el('div', { class: 'tx' + (o.bullet ? ' bul' : '') }); tx.style.cssText = textStyle(Object.assign({}, o, { ha: o.ha || (o.type === 'shape' ? 'center' : 'left') }));
-        String(o.text || '').split('\n').forEach(l => { tx.appendChild(el('div', { text: l === '' ? '​' : l })); }); box.appendChild(tx); n.appendChild(box);
+        if (o.html) tx.innerHTML = o.html; else String(o.text || '').split('\n').forEach(l => { tx.appendChild(el('div', { text: l === '' ? '​' : l })); }); box.appendChild(tx); n.appendChild(box);
       }
     }
     if (o.anim && o.anim !== 'none' && opts.anim) n.dataset.anim = o.anim;
+    (OA.pptObjHooks || []).forEach(f => f(n, o, deck, opts));
     return n;
   }
   function renderSlide(slide, deck, opts) {
     opts = opts || {}; const s = el('div', { class: 'p-slide' }); s.style.cssText = `width:${deck.w}px;height:${deck.h}px;background:${slide.bg || T(deck).bg};`;
-    slide.objs.forEach(o => s.appendChild(objNode(o, deck, opts))); return s;
+    (OA.pptSlideHooks || []).forEach(f => f('pre', slide, s, deck, opts)); slide.objs.forEach(o => { if (o.hidden && !opts.edit) return; s.appendChild(objNode(o, deck, opts)); }); (OA.pptSlideHooks || []).forEach(f => f('post', slide, s, deck, opts)); return s;
   }
 
   OA.registerApp({
@@ -93,6 +94,7 @@
       const zoomRange = el('input', { type: 'range', min: 30, max: 250, value: 100, 'aria-label': 'Zoom' }); zoomRange.addEventListener('input', () => { zoomMul = zoomRange.value / 100; fit(); });
       sh.status.append(sbSlide, sbInfo, el('span', { class: 'sb-fill' }), el('span', { class: 'sb-dev sb-hide-s', text: 'Developer: ' + OA.DEV }), el('button', { type: 'button', text: '▤ Notes', title: 'Show / hide notes', onclick: () => { showNotes = !showNotes; notes.hidden = !showNotes; fit(); } }), el('button', { type: 'button', html: OA.icon('play', 14) + ' Show', title: 'Slide Show (F5)', onclick: () => present(cur) }), el('button', { type: 'button', html: OA.icon('zoomOut', 15), onclick: () => { zoomMul = Math.max(0.3, zoomMul - 0.1); fit(); } }), zoomRange, el('button', { type: 'button', html: OA.icon('zoomIn', 15), onclick: () => { zoomMul = Math.min(2.5, zoomMul + 0.1); fit(); } }), zoomLbl);
 
+      const P0 = { get cur() { return cur; }, gotoSlide: i => gotoSlide(i) };
       /* ---------- history */
       const snap = () => { undoS.push(JSON.stringify(deck)); if (undoS.length > 60) undoS.shift(); redoS = []; dirty = true; };
       function restore(j) { deck = JSON.parse(j); cur = Math.min(cur, deck.slides.length - 1); selId = null; editing = null; renderAll(); }
@@ -121,7 +123,7 @@
           th.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', String(i)); e.dataTransfer.effectAllowed = 'move'; }); th.addEventListener('dragover', e => { e.preventDefault(); th.classList.add('over'); }); th.addEventListener('dragleave', () => th.classList.remove('over'));
           th.addEventListener('drop', e => { e.preventDefault(); th.classList.remove('over'); const f = +e.dataTransfer.getData('text/plain'); if (!isNaN(f) && f !== i) moveSlide(f, i); });
           thumbs.appendChild(th);
-        }); thumbs.scrollTop = keep; const on = thumbs.querySelector('.on'); on && on.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }); (OA.pptThumbHooks || []).forEach(f => f(thumbs, deck, P0)); thumbs.scrollTop = keep; const on = thumbs.querySelector('.on'); on && on.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       }
       const thumbsSoon = () => { clearTimeout(thumbT); thumbT = setTimeout(renderThumbs, 120); };
       function renderAll() { renderStage(); renderThumbs(); fit(); syncRibbon(); }
@@ -130,33 +132,34 @@
       /* ---------- selection overlay */
       let selEl = null;
       function drawSel() {
-        if (selEl) { selEl.remove(); selEl = null; } const o = SEL(); if (!o || editing === o.id) { if (!o) return; } if (!o) return;
+        if (selEl) { selEl.remove(); selEl = null; } stage.querySelectorAll('.p-selx').forEach(x => x.remove()); const o = SEL(); if (!o || editing === o.id) { if (!o) return; } if (!o) return;
         const b = el('div', { class: 'p-selbox' }); b.style.cssText = `left:${o.x}px;top:${o.y}px;width:${o.w}px;height:${o.h}px;border-width:${1.5 / scale}px;` + (o.rot ? `transform:rotate(${o.rot}deg);` : '');
         const hs = 11 / scale; const pts = [['nw', 0, 0], ['n', .5, 0], ['ne', 1, 0], ['e', 1, .5], ['se', 1, 1], ['s', .5, 1], ['sw', 0, 1], ['w', 0, .5]];
         if (editing !== o.id) pts.forEach(([k, px, py]) => { const h = el('div', { class: 'p-h', 'data-h': k }); h.style.cssText = `left:${px * 100}%;top:${py * 100}%;width:${hs}px;height:${hs}px;margin:${-hs / 2}px 0 0 ${-hs / 2}px;border-width:${1.5 / scale}px;cursor:${{ nw: 'nwse', se: 'nwse', ne: 'nesw', sw: 'nesw', n: 'ns', s: 'ns', e: 'ew', w: 'ew' }[k]}-resize`; h.addEventListener('pointerdown', e => startResize(e, k)); b.appendChild(h); });
         if (editing !== o.id) { const r = el('div', { class: 'p-h rot' }); r.style.cssText = `left:50%;top:${-26 / scale}px;width:${hs}px;height:${hs}px;margin:${-hs / 2}px 0 0 ${-hs / 2}px;border-width:${1.5 / scale}px`; r.addEventListener('pointerdown', startRotate); b.appendChild(r); }
         stage.appendChild(b); selEl = b;
+        selExtra.forEach(id => { const q = O(id); if (!q) return; const x = el('div', { class: 'p-selbox p-selx' }); x.style.cssText = `left:${q.x}px;top:${q.y}px;width:${q.w}px;height:${q.h}px;border:${1.5 / scale}px dashed #b7472a;pointer-events:none;` + (q.rot ? `transform:rotate(${q.rot}deg);` : ''); stage.appendChild(x); });
       }
-      function select(id) { if (selId === id) return; finishEdit(); selId = id; drawSel(); syncRibbon(); }
+      function select(id) { if (selId === id && !selExtra.size) return; finishEdit(); selId = id; selExtra = new Set(); drawSel(); syncRibbon(); }
       const stagePt = e => { const r = wrap.getBoundingClientRect(); return { x: (e.clientX - r.left) / scale, y: (e.clientY - r.top) / scale }; };
-      let drag = null;
+      let drag = null; let selExtra = new Set();
       const moveNode = o => { const n = nodeOf(o.id); if (n) { n.style.left = o.x + 'px'; n.style.top = o.y + 'px'; n.style.width = o.w + 'px'; n.style.height = o.h + 'px'; n.style.transform = o.rot ? `rotate(${o.rot}deg)` : ''; } if (selEl) { selEl.style.left = o.x + 'px'; selEl.style.top = o.y + 'px'; selEl.style.width = o.w + 'px'; selEl.style.height = o.h + 'px'; selEl.style.transform = o.rot ? `rotate(${o.rot}deg)` : ''; } };
       const snapV = (v, targets) => { for (const t of targets) if (Math.abs(v - t) < 5 / Math.max(scale, .3)) return t; return v; };
       wrap.addEventListener('pointerdown', e => {
         if (e.target.closest('.p-h')) return; const n = e.target.closest('.p-obj'); if (editing && n && n.dataset.id === editing) return;
         box.focus({ preventScroll: true }); if (!n) { select(null); return; }
-        const id = n.dataset.id; if (selId !== id) { finishEdit(); selId = id; drawSel(); syncRibbon(); } const o = O(id); if (!o) return; e.preventDefault();
-        const p = stagePt(e); drag = { mode: 'move', id, sx: p.x, sy: p.y, ox: o.x, oy: o.y, moved: false, t: Date.now() }; wrap.setPointerCapture(e.pointerId);
+        const id = n.dataset.id; if (e.shiftKey && selId && id !== selId) { e.preventDefault(); selExtra.has(id) ? selExtra.delete(id) : selExtra.add(id); drawSel(); syncRibbon(); return; } if (selId !== id && !selExtra.has(id)) { finishEdit(); selId = id; selExtra = new Set(); drawSel(); syncRibbon(); } else if (selId !== id && selExtra.has(id)) { selExtra.delete(id); selExtra.add(selId); selId = id; drawSel(); syncRibbon(); } const o = O(id); if (!o) return; e.preventDefault();
+        const p = stagePt(e); drag = { mode: 'move', id, sx: p.x, sy: p.y, ox: o.x, oy: o.y, moved: false, t: Date.now(), ex: Array.from(selExtra).map(i => O(i)).filter(Boolean).map(q => ({ q, ox: q.x, oy: q.y })) }; wrap.setPointerCapture(e.pointerId);
       });
       wrap.addEventListener('pointermove', e => {
         if (!drag) return; const o = O(drag.id); if (!o) return; const p = stagePt(e);
-        if (drag.mode === 'move') { const dx = p.x - drag.sx, dy = p.y - drag.sy; if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 3 / scale) return; if (!drag.moved) { snap(); drag.moved = true; } let nx = drag.ox + dx, ny = drag.oy + dy; if (!e.altKey) { nx = snapV(nx, [0, deck.w - o.w, (deck.w - o.w) / 2]); ny = snapV(ny, [0, deck.h - o.h, (deck.h - o.h) / 2]); } o.x = Math.round(nx * 10) / 10; o.y = Math.round(ny * 10) / 10; moveNode(o); }
+        if (drag.mode === 'move') { const dx = p.x - drag.sx, dy = p.y - drag.sy; if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 3 / scale) return; if (!drag.moved) { snap(); drag.moved = true; } let nx = drag.ox + dx, ny = drag.oy + dy; if (!e.altKey) { nx = snapV(nx, [0, deck.w - o.w, (deck.w - o.w) / 2]); ny = snapV(ny, [0, deck.h - o.h, (deck.h - o.h) / 2]); } o.x = Math.round(nx * 10) / 10; o.y = Math.round(ny * 10) / 10; moveNode(o); (drag.ex || []).forEach(r => { r.q.x = r.ox + (o.x - drag.ox); r.q.y = r.oy + (o.y - drag.oy); moveNode(r.q); }); }
         else if (drag.mode === 'resize') { if (!drag.moved) { snap(); drag.moved = true; } resizeTo(o, p, e); moveNode(o); }
         else if (drag.mode === 'rotate') { if (!drag.moved) { snap(); drag.moved = true; } const cx = o.x + o.w / 2, cy = o.y + o.h / 2; let ang = Math.atan2(p.y - cy, p.x - cx) * 180 / Math.PI + 90; if (e.shiftKey) ang = Math.round(ang / 15) * 15; ang = ((Math.round(ang) % 360) + 360) % 360; o.rot = ang === 0 ? 0 : ang; moveNode(o); }
       });
       const endDrag = e => { if (!drag) return; const d = drag; drag = null; if (d.moved) { thumbsSoon(); syncRibbon(); } };
       wrap.addEventListener('pointerup', endDrag); wrap.addEventListener('pointercancel', endDrag);
-      wrap.addEventListener('dblclick', e => { const n = e.target.closest('.p-obj'); if (!n) return; const o = O(n.dataset.id); if (o && (o.type === 'text' || o.type === 'shape')) startEdit(o.id); else if (o && o.type === 'table') editTable(o); });
+      wrap.addEventListener('dblclick', e => { let n = e.target.closest && e.target.closest('.p-obj'); if (!n) { const hit = document.elementsFromPoint(e.clientX, e.clientY).find(x => x.closest && x.closest('.p-obj') && !x.closest('.p-th')); n = hit && hit.closest('.p-obj'); } if (!n) return; const o = O(n.dataset.id); if (o && (o.type === 'text' || o.type === 'shape')) startEdit(o.id); else if (o && o.type === 'table') editTable(o); });
       function startResize(e, k) { e.stopPropagation(); e.preventDefault(); const o = SEL(); if (!o) return; const p = stagePt(e); drag = { mode: 'resize', id: o.id, h: k, sx: p.x, sy: p.y, o0: { x: o.x, y: o.y, w: o.w, h: o.h, rot: o.rot || 0 }, moved: false }; wrap.setPointerCapture(e.pointerId); }
       function startRotate(e) { e.stopPropagation(); e.preventDefault(); const o = SEL(); if (!o) return; drag = { mode: 'rotate', id: o.id, moved: false }; wrap.setPointerCapture(e.pointerId); }
       function resizeTo(o, p, e) {
@@ -170,15 +173,15 @@
       /* ---------- text editing */
       function beginEditDom(n) {
         const o = O(n.dataset.id); if (!o) return; let tx = n.querySelector('.tx'); if (!tx) { const bx = el('div', { class: 'p-t' }); tx = el('div', { class: 'tx' }); tx.style.cssText = textStyle(Object.assign({}, o, { ha: o.ha || 'center' })); bx.style.justifyContent = 'center'; bx.appendChild(tx); n.appendChild(bx); }
-        tx.classList.remove('bul'); tx.textContent = o.text || ''; tx.setAttribute('contenteditable', 'plaintext-only'); if (tx.contentEditable !== 'plaintext-only') tx.setAttribute('contenteditable', 'true'); n.classList.add('editing'); tx.focus({ preventScroll: true });
+        tx.classList.remove('bul'); if (o.rich && o.html) tx.innerHTML = o.html; else tx.textContent = o.text || ''; tx.setAttribute('contenteditable', o.rich ? 'true' : 'plaintext-only'); if (tx.contentEditable !== 'plaintext-only' && !o.rich) tx.setAttribute('contenteditable', 'true'); n.classList.add('editing'); tx.focus({ preventScroll: true });
         const r = document.createRange(); r.selectNodeContents(tx); if (!/^(Click to add|Presentation Title|Subtitle or author|Section Title|Short description|Text box|Lesson Title|Header )/.test(o.text || '')) r.collapse(false); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
         tx.addEventListener('keydown', ev => { if (ev.key === 'Escape') { ev.preventDefault(); finishEdit(); box.focus(); } ev.stopPropagation(); }); tx.addEventListener('blur', () => setTimeout(() => { if (editing === o.id && document.activeElement !== tx && !document.activeElement.closest('.ribbon, .dlg, .popup')) finishEdit(); }, 150));
-        tx.addEventListener('input', () => { o.text = tx.innerText.replace(/​/g, '').replace(/\n$/, ''); });
+        tx.addEventListener('input', () => { o.text = tx.innerText.replace(/​/g, '').replace(/\n$/, ''); if (o.rich) o.html = OA.pptSanitize(tx.innerHTML); });
         tx.addEventListener('paste', ev => ev.stopPropagation()); tx.addEventListener('copy', ev => ev.stopPropagation()); tx.addEventListener('cut', ev => ev.stopPropagation());
       }
       function startEdit(id) { if (editing === id) return; finishEdit(); const o = O(id); if (!o) return; snap(); editing = id; selId = id; renderStage(); syncRibbon(); }
       function finishEdit(silent) {
-        if (!editing) return; const id = editing; editing = null; const o = O(id); const n = nodeOf(id); const tx = n && n.querySelector('.tx[contenteditable]'); if (o && tx) o.text = tx.innerText.replace(/​/g, '').replace(/\n$/, '');
+        if (!editing) return; const id = editing; editing = null; const o = O(id); const n = nodeOf(id); const tx = n && n.querySelector('.tx[contenteditable]'); if (o && tx) { o.text = tx.innerText.replace(/​/g, '').replace(/\n$/, ''); if (o.rich) o.html = OA.pptSanitize(tx.innerHTML); }
         if (!silent) { renderStage(); thumbsSoon(); }
       }
       notes.addEventListener('input', () => { S().notes = notes.value; dirty = true; });
@@ -205,7 +208,7 @@
         OA.dialog({ title: 'Edit Table', width: 520, content: wrapx, buttons: [{ label: 'Cancel', value: false }, { label: 'OK', primary: true, onClick: () => { mutate(() => { const rows = ta.value.replace(/\r/g, '').split('\n').map(l => l.split('\t')); const nc = Math.max(...rows.map(r => r.length)); o.rows = rows.map(r => Array.from({ length: nc }, (_, i) => r[i] || '')); }); } }] });
       }
       function fmtObj(patch) {
-        const o = SEL(); if (!o) return toast('Pehle koi object select karein'); const live = editing === o.id; if (!live) { finishEdit(); snap(); } Object.assign(o, patch); Object.keys(patch).forEach(k => { if (patch[k] === null) delete o[k]; });
+        const o = SEL(); if (!o) return toast('Pehle koi object select karein'); const live = editing === o.id; if (live && OA.pptInline && OA.pptInline(patch, o, nodeOf(o.id))) { syncRibbon(); return; } if (!live) { finishEdit(); snap(); } Object.assign(o, patch); Object.keys(patch).forEach(k => { if (patch[k] === null) delete o[k]; });
         if (live) { const n = nodeOf(o.id); const tx = n && n.querySelector('.tx'); if (tx) tx.style.cssText = textStyle(Object.assign({}, o, { ha: o.ha || (o.type === 'shape' ? 'center' : 'left') })); } else renderAll(); syncRibbon(); thumbsSoon();
       }
       const delSel = () => { const o = SEL(); if (!o) return; mutate(() => { S().objs = S().objs.filter(x => x.id !== o.id); selId = null; }); };
@@ -246,7 +249,7 @@
 
       /* ---------- slide show */
       function present(from) {
-        finishEdit(); let i = Math.max(0, from || 0); const ov = el('div', { class: 'p-show' }); let sl = null, steps = [], si = 0; const ctr = el('div', { class: 'ctr' }); const ex = el('button', { class: 'exit', type: 'button', text: 'Exit (Esc)', onclick: () => close() }); ov.append(ctr, ex); document.body.appendChild(ov);
+        finishEdit(); if (OA.pptPresent && typeof P !== 'undefined') return OA.pptPresent(P, from); let i = Math.max(0, from || 0); const ov = el('div', { class: 'p-show' }); let sl = null, steps = [], si = 0; const ctr = el('div', { class: 'ctr' }); const ex = el('button', { class: 'exit', type: 'button', text: 'Exit (Esc)', onclick: () => close() }); ov.append(ctr, ex); document.body.appendChild(ov);
         const fsEl = ov.requestFullscreen ? ov : null; try { fsEl && fsEl.requestFullscreen().catch(() => { }); } catch (e) { }
         const sc = () => Math.min(innerWidth / deck.w, innerHeight / deck.h);
         function show(idx, dirn) {
@@ -301,7 +304,7 @@
       const fontSel = { type: 'combo', id: 'font', options: FONTS, width: 120, value: 'Calibri', title: 'Font', inputmode: 'text', onChange: v => v && fmtObj({ font: v }) };
       const sizeSel = { type: 'combo', id: 'size', options: ['10', '12', '14', '16', '18', '20', '24', '28', '32', '36', '44', '54', '72', '96'], width: 46, value: '18', title: 'Font size', onChange: v => { const n = parseFloat(v); if (n > 0 && n < 500) fmtObj({ sz: n }); } };
       const num = (id, label, prop, min) => ({ type: 'number', id, label, value: 0, min, width: 66, onChange: v => { const o = SEL(); if (!o || isNaN(v)) return; mutate(() => { o[prop] = prop === 'rot' ? ((v % 360) + 360) % 360 : v; }); } });
-      const transTypes = [['none', 'None'], ['fade', 'Fade'], ['push', 'Push'], ['wipe', 'Wipe'], ['zoom', 'Zoom'], ['split', 'Split'], ['cover', 'Cover'], ['dissolve', 'Dissolve'], ['random', 'Random']];
+      const transTypes = [['none', 'None'], ['fade', 'Fade'], ['push', 'Push'], ['wipe', 'Wipe'], ['zoom', 'Zoom'], ['split', 'Split'], ['cover', 'Cover'], ['uncover', 'Uncover'], ['dissolve', 'Dissolve'], ['blinds', 'Blinds'], ['circle', 'Circle'], ['diamond', 'Diamond'], ['curtains', 'Curtains'], ['flip', 'Flip'], ['cube', 'Cube'], ['vortex', 'Vortex'], ['flash', 'Flash'], ['fall', 'Fall Over'], ['reveal', 'Reveal'], ['morph', 'Morph'], ['random', 'Random']];
       const animTypes = [['none', 'None'], ['appear', 'Appear'], ['fade', 'Fade'], ['fly', 'Fly In'], ['zoom', 'Zoom']];
       const spec = {
         file: { onClick: () => bs.open('info') },
@@ -342,11 +345,17 @@
             { label: 'Table', items: [B('et', 'Edit table', 'table', () => { const o = SEL(); o && o.type === 'table' && editTable(o); }, { label: 'Edit table' })] }] }
         ]
       };
+      const P = { el, uid, toast, THEMES, FONTS, SHAPES, GEO, LAYOUTS, layoutObjs, newSlide, txt, objNode, renderSlide, B, L, G, spec, root, sh, box, wrap, stage, thumbs, notes,
+        get deck() { return deck; }, set deck(d) { deck = d; }, get cur() { return cur; }, set cur(v) { cur = v; }, get selId() { return selId; }, set selId(v) { selId = v; }, get extra() { return Array.from(selExtra).map(O).filter(Boolean); }, set extra(a) { selExtra = new Set(a); },
+        get scale() { return scale; }, get editing() { return editing; }, get rb() { return rb; }, get dirty() { return dirty; }, set dirty(v) { dirty = v; }, get clip() { return clip; }, set clip(v) { clip = v; },
+        S, SEL, O, snap, mutate, renderAll, renderStage, renderThumbs, thumbsSoon, fit, drawSel, select, addObj, fmtObj, finishEdit, gotoSlide, addSlide, delSlide, dupSlide, moveSlide, mkText, mkShape, cloneObj, present, doExport, doPrint, nodeOf, syncRibbon, baseName, setSize, arrange, applyTheme, insertImage, startEdit, undo, redo, setZoom: v => { zoomMul = v; fit(); },
+        get all() { return [SEL()].concat(Array.from(selExtra).map(O)).filter(Boolean); } };
+      window.__ppt = P; (OA.pptExtras || []).forEach(f => f(P, spec));
       spec.right = el('div', { class: 'rtab-right' }); rb = OA.buildRibbon(sh.ribbon, spec); const ctl = rb.ctl;
       function syncRibbon() {
         if (!rb) return; const o = SEL(); rb.setTabVisible('shape', !!o); if (o && !rb._o) { rb.showTab('shape'); } rb._o = !!o; if (o) { ['b', 'i', 'u'].forEach(k => rb.setOn(k, o[k])); rb.setOn('bul', o.bullet); rb.setOn('al', o.ha === 'left'); rb.setOn('ac', o.ha === 'center'); rb.setOn('ar', o.ha === 'right'); rb.setOn('aj', o.ha === 'justify');
           if (document.activeElement !== ctl.font) ctl.font.value = o.font || 'Calibri'; if (document.activeElement !== ctl.size) ctl.size.value = String(Math.round(o.sz || 18)); [['px', 'x'], ['py', 'y'], ['pw', 'w'], ['ph', 'h'], ['pr', 'rot']].forEach(([id, p]) => { if (document.activeElement !== ctl[id]) ctl[id].value = Math.round((o[p] || 0) * 10) / 10; }); if (ctl.lw && document.activeElement !== ctl.lw) ctl.lw.value = o.lw || 1; if (ctl.an) ctl.an.value = o.anim || 'none'; } else if (ctl.an) ctl.an.value = 'none';
-        if (ctl.tt) { ctl.tt.value = (S().trans && S().trans.type) || 'none'; ctl.td.value = (S().trans && S().trans.dur) || 1; }
+        (OA.pptSync || []).forEach(f => f(P, rb)); if (ctl.tt) { ctl.tt.value = (S().trans && S().trans.type) || 'none'; ctl.td.value = (S().trans && S().trans.dur) || 1; }
       }
       /* ---------- backstage */
       bs = OA.backstage(root, { items: [

@@ -42,7 +42,8 @@
   /* ---------------------------------------------------------------- WRITE */
   function posToCell(sh, wb, x, y) { let c = 0, acc = 0; while (c < 16384) { const w = wb.colWidth(sh, c); if (acc + w > x) break; acc += w; c++; } const co = Math.round((x - acc)); let r = 0, ac = 0; while (r < 1048576) { const h = wb.rowHeight(sh, r); if (ac + h > y) break; ac += h; r++; } return { c, r, co, ro: Math.round(y - ac) }; }
   function chartXml(wb, ch) {
-    const d = XL.chartData(wb, ch); const t = ch.type;
+    const d = XL.chartData(wb, ch); const t = ({ combo: 'col', histogram: 'col', waterfall: 'col', funnel: 'bar', box: 'col', stock: 'line', radar: 'line', bubble: 'scatter' })[ch.type] || ch.type;
+    const trT = { linear: 'linear', exp: 'exp', log: 'log', poly: 'poly', power: 'power', avg: 'movingAvg' };
     const col = i => ['4472C4', 'ED7D31', 'A5A5A5', 'FFC000', '5B9BD5', '70AD47', '264478', '9E480E'][i % 8];
     const strCache = arr => `<c:strCache><c:ptCount val="${arr.length}"/>${arr.map((v, i) => `<c:pt idx="${i}"><c:v>${xe(v)}</c:v></c:pt>`).join('')}</c:strCache>`;
     const numCache = arr => `<c:numCache><c:formatCode>General</c:formatCode><c:ptCount val="${arr.length}"/>${arr.map((v, i) => `<c:pt idx="${i}"><c:v>${v}</c:v></c:pt>`).join('')}</c:numCache>`;
@@ -52,7 +53,7 @@
       const catXml = t === 'scatter' ? `<c:xVal><c:numRef><c:f>${xe(s.catRef || s.valRef)}</c:f>${numCache(d.cats.map((x, k) => isNaN(+x) ? k + 1 : +x))}</c:numRef></c:xVal>` : `<c:cat>${s.catRef ? `<c:strRef><c:f>${xe(s.catRef)}</c:f>${strCache(d.cats)}</c:strRef>` : `<c:strLit><c:ptCount val="${d.cats.length}"/>${d.cats.map((v, k) => `<c:pt idx="${k}"><c:v>${xe(v)}</c:v></c:pt>`).join('')}</c:strLit>`}</c:cat>`;
       const valXml = `<c:${t === 'scatter' ? 'yVal' : 'val'}><c:numRef><c:f>${xe(s.valRef)}</c:f>${numCache(s.vals)}</c:numRef></c:${t === 'scatter' ? 'yVal' : 'val'}>`;
       let pts = ''; if (t === 'pie' || t === 'doughnut') pts = d.cats.map((_, k) => `<c:dPt><c:idx val="${k}"/><c:bubble3D val="0"/><c:spPr><a:solidFill><a:srgbClr val="${col(k)}"/></a:solidFill></c:spPr></c:dPt>`).join('');
-      return `<c:ser><c:idx val="${i}"/><c:order val="${i}"/>${tx}${t === 'pie' || t === 'doughnut' ? '' : fill}${t === 'line' ? '<c:marker><c:symbol val="circle"/><c:size val="5"/></c:marker>' : ''}${pts}${catXml}${valXml}${t === 'line' ? '<c:smooth val="0"/>' : ''}</c:ser>`;
+      return `<c:ser><c:idx val="${i}"/><c:order val="${i}"/>${tx}${t === 'pie' || t === 'doughnut' ? '' : fill}${t === 'line' ? '<c:marker><c:symbol val="circle"/><c:size val="5"/></c:marker>' : ''}${pts}${ch.trendline && trT[ch.trendline] && i === (ch.trendSeries || 0) && t !== 'pie' && t !== 'doughnut' ? `<c:trendline><c:trendlineType val="${trT[ch.trendline]}"/>${ch.trendline === 'poly' ? '<c:order val="2"/>' : ''}${ch.trendline === 'avg' ? `<c:period val="${ch.trendPeriod || 2}"/>` : ''}<c:dispRSqr val="0"/><c:dispEq val="${ch.trendEq ? 1 : 0}"/></c:trendline>` : ''}${ch.errBars && (t === 'col' || t === 'bar' || t === 'line') ? `<c:errBars><c:errBarType val="both"/><c:errValType val="${ch.errBars === 'pct' ? 'percentage' : ch.errBars === 'sd' ? 'stdDev' : 'fixedVal'}"/><c:noEndCap val="0"/><c:val val="${+ch.errVal || (ch.errBars === 'pct' ? 5 : 1)}"/></c:errBars>` : ''}${catXml}${valXml}${t === 'line' ? '<c:smooth val="0"/>' : ''}</c:ser>`;
     }).join('');
     const ax = '<c:axId val="111"/><c:axId val="222"/>';
     let plot;
@@ -128,9 +129,9 @@
       let hl = ''; if (sh.links.size) { hl = '<hyperlinks>' + Array.from(sh.links).map(([k, u]) => { const { r, c } = XL.unkey(k); const id = 'rIdL' + (++relId); rels.push(`<Relationship Id="${id}" Type="${REL}/hyperlink" Target="${xe(u)}" TargetMode="External"/>`); return `<hyperlink ref="${XL.addr(r, c)}" r:id="${id}"/>`; }).join('') + '</hyperlinks>'; }
       const af = sh.filter ? `<autoFilter ref="${XL.rangeStr(sh.filter.range)}"/>` : '';
       // charts
-      let drawingTag = ''; if (sh.charts.length) {
+      let drawingTag = ''; const realCharts = sh.charts.filter(c => !c.obj); if (realCharts.length) {
         let dx = ''; const drels = [];
-        sh.charts.forEach((ch, i) => { chartN++; const p = posToCell(sh, wb, ch.x, ch.y); const cid = 'rId' + (i + 1); drels.push(`<Relationship Id="${cid}" Type="${REL}/chart" Target="../charts/chart${chartN}.xml"/>`); charts.push([`xl/charts/chart${chartN}.xml`, chartXml(wb, ch)]);
+        realCharts.forEach((ch, i) => { chartN++; const p = posToCell(sh, wb, ch.x, ch.y); const cid = 'rId' + (i + 1); drels.push(`<Relationship Id="${cid}" Type="${REL}/chart" Target="../charts/chart${chartN}.xml"/>`); charts.push([`xl/charts/chart${chartN}.xml`, chartXml(wb, ch)]);
           dx += `<xdr:oneCellAnchor><xdr:from><xdr:col>${p.c}</xdr:col><xdr:colOff>${p.co * 9525}</xdr:colOff><xdr:row>${p.r}</xdr:row><xdr:rowOff>${p.ro * 9525}</xdr:rowOff></xdr:from><xdr:ext cx="${Math.round(ch.w * 9525)}" cy="${Math.round(ch.h * 9525)}"/><xdr:graphicFrame macro=""><xdr:nvGraphicFramePr><xdr:cNvPr id="${i + 2}" name="Chart ${i + 1}"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" r:id="${cid}"/></a:graphicData></a:graphic></xdr:graphicFrame><xdr:clientData/></xdr:oneCellAnchor>`; });
         drawings.push([`xl/drawings/drawing${n}.xml`, `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${REL}">${dx}</xdr:wsDr>`], [`xl/drawings/_rels/drawing${n}.xml.rels`, `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${drels.join('')}</Relationships>`]);
         const id = 'rIdD' + (++relId); rels.push(`<Relationship Id="${id}" Type="${REL}/drawing" Target="../drawings/drawing${n}.xml"/>`); drawingTag = `<drawing r:id="${id}"/>`;
